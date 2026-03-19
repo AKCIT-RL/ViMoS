@@ -1,0 +1,3 @@
+[submodule "GMR"]
+	path = GMR
+	url = https://github.com/AKCIT-RL/GMR.git
