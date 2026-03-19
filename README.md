@@ -1,4 +1,4 @@
-# CopyCat 🐱
+# CopyCat 
 
 **CopyCat** is an end-to-end pipeline for human motion imitation and retargeting to robots, leveraging the GENMO and GMR frameworks. It enables the conversion of video input into robot motion, combining state-of-the-art motion generation (GENMO) and retargeting (GMR).
 
