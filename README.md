@@ -32,12 +32,20 @@ git submodule update --init --recursive
 
 All commands below should be run from the `CopyCat/` directory.
 
-### Minimal Example
+### Minimal Example — Single Video
 
 ```bash
 python run_pipeline.py \
     --video /path/to/video.mp4 \
     --robot booster_t1
+```
+
+### Minimal Example — Folder of Videos
+
+```bash
+python run_pipeline.py \
+    --videos_path /path/to/folder/ \
+    --robot unitree_g1
 ```
 
 ### Full Example
@@ -58,12 +66,18 @@ python run_pipeline.py \
 
 ## Flags
 
+### Input (mutually exclusive — exactly one required)
+
+| Flag | Description |
+|---|---|
+| `--video` / `-v` | Path to a **single** `.mp4` file |
+| `--videos_path` | Path to a **folder** of `.mp4` files (searched recursively) |
+
 ### GENMO — Video to SMPL
 
 | Flag | Default | Description |
 |---|---|---|
-| `--video` | *required* | Path to input video **or** folder containing `.mp4` files |
-| `--video_name` | file stem | Name used for output folder (ignored if `--video` is a folder) |
+| `--video_name` | file stem | Name used for the output folder (ignored with `--videos_path`) |
 | `--output_dir` | `GENMO/outputs/demo/<video_name>` | GENMO output directory |
 | `--ckpt_path` | `GENMO/inputs/checkpoints/s050000.ckpt` | Model checkpoint |
 | `--exp` | `genmo_lg` | Experiment configuration |
@@ -97,13 +111,16 @@ tienkung
 
 ## Outputs
 
+The pipeline runs three stages — **GENMO → GMR → PKL-to-CSV** — and produces the following files:
+
 | File | Description |
 |---|---|
-| `<output_dir>/hmr4d_results.pt` | GENMO SMPL estimation |
-| `<output_dir>/robot_motion_<robot>.pkl` | Retargeted robot motion |
-| `GMR/videos/<robot>_hmr4d_results.mp4` | Visualization video (if `--record_video` is used) |
-| `<output_dir>/pose_debug_vid1_f0000.png` | Debug PNG of pose skeleton (if `--pose` is used) |
-| `<output_dir>/yolo_debug_vid1_f0000.png` | Debug PNG of YOLO bounding box (if `--pose` is used) |
+| `GENMO/outputs/demo/<video_name>/hmr4d_results.pt` | GENMO SMPL pose estimation |
+| `GMR/output/pkl/<robot>_<video_name>.pkl` | Retargeted robot motion (PKL) |
+| `GMR/output/csv/<robot>_<video_name>.csv` | Retargeted robot motion (CSV, joints over time) |
+| `GMR/videos/<robot>_<video_name>.mp4` | Visualization video (only if `--record_video` is used) |
+| `GENMO/outputs/demo/<video_name>/pose_debug_vid1_f0000.png` | Debug PNG — pose skeleton (only if `--pose` is used) |
+| `GENMO/outputs/demo/<video_name>/yolo_debug_vid1_f0000.png` | Debug PNG — YOLO bounding box (only if `--pose` is used) |
 
 ---
 
