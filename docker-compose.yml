@@ -1,0 +1,90 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CopyCat — Docker Compose
+#
+# Usage: do not run `docker compose up` directly.
+# The orchestrator scripts/run_pipeline_docker.py invokes services with:
+#   docker compose run --rm genmo <command>
+#   docker compose run --rm gmr   <command>
+#
+# Build:
+#   docker compose build
+#   docker compose build genmo   # build GENMO only
+#   docker compose build gmr     # build GMR only
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── GENMO: video → SMPL-X (requires GPU) ────────────────────────────────────
+  genmo:
+    build:
+      context: ./GENMO
+      dockerfile: Dockerfile
+    image: copycat-genmo:latest
+    working_dir: /app
+
+    volumes:
+      # GENMO checkpoints and other inputs (read-only)
+      - ./GENMO/inputs:/app/inputs:ro
+      # GENMO outputs — shared with the gmr service
+      - ./GENMO/outputs:/app/outputs
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=0
+      - HYDRA_FULL_ERROR=1
+      # Redirect caches to /tmp — required when running with --user uid:gid
+      # (/.cache and /.config are root-owned and inaccessible for non-root users)
+      - HF_HOME=/tmp/hf_cache
+      - TRANSFORMERS_CACHE=/tmp/hf_cache
+      - HUGGINGFACE_HUB_CACHE=/tmp/hf_cache
+      - MPLCONFIGDIR=/tmp/matplotlib
+      - XDG_CACHE_HOME=/tmp/.cache
+      - YOLO_CONFIG_DIR=/tmp/ultralytics
+
+    # GPU: requires Docker 19.03+ with nvidia-container-toolkit
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    # Relaxed IPC for PyTorch DataLoader shared memory
+    ipc: host
+    stdin_open: false
+    tty: false
+
+  # ── GMR: SMPL-X → robot motion (headless via EGL) ───────────────────────────
+  gmr:
+    build:
+      context: ./GMR
+      dockerfile: Dockerfile
+    image: copycat-gmr:latest
+    working_dir: /app
+
+    volumes:
+      # Robot assets and SMPL-X body models (read-only)
+      - ./GMR/assets:/app/assets:ro
+      # PKL and CSV outputs
+      - ./GMR/output:/app/output
+      # Visualization videos (optional)
+      - ./GMR/videos:/app/videos
+      # GENMO outputs read by GMR (read-only)
+      - ./GENMO/outputs:/genmo_outputs:ro
+
+    environment:
+      # Offscreen EGL with GPU — no GLFW, no display required
+      - MUJOCO_GL=egl
+
+    # GPU for EGL offscreen rendering (mj.Renderer — no GLFW/viewer)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    stdin_open: false
+    tty: false
