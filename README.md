@@ -1,14 +1,15 @@
-# CopyCat
+# Do you still need Mocap? Comparative Study between Inertial Suit Driven Motion and Video Extraction Motion for Humanoid Control
 
-**CopyCat** is an end-to-end pipeline for human motion imitation and retargeting to robots, leveraging the GENMO and GMR frameworks. It enables the conversion of video input into robot motion, combining state-of-the-art motion generation (GENMO) and retargeting (GMR).
+**DYSNM** is an end-to-end pipeline for human motion imitation, retargeting and policy training for humanoids robots, leveraging the GENMO, GMR and Whole Body Tracking frameworks. It enables the conversion of video input into robot motion, combining state-of-the-art motion generation (GENMO), retargeting (GMR) and policy training for Booster T1 and Unitree G1 (Whole Body Tracking).
 
 ---
 
 ## Acknowledgements
 
-CopyCat is built on top of:
+DYSNM is built on top of:
 - **GENMO** (Human motion generation)
 - **GMR** (General Motion Retargeting)
+- **whole_body_tracking** (Policy training)
 
 Special thanks to the authors and maintainers of both projects. Please refer to their respective repositories for credits, documentation, and support.
 
@@ -18,7 +19,7 @@ Special thanks to the authors and maintainers of both projects. Please refer to 
 
 **Important:**
 - You must follow the setup instructions in the README of each submodule (GENMO and GMR) to ensure all dependencies and environments are correctly installed.
-- GENMO and GMR are included as git submodules. After cloning CopyCat, initialize and update them:
+- GENMO and GMR are included as git submodules. After cloning DYSNM, initialize and update them:
 
 ```bash
 git submodule update --init --recursive
@@ -30,36 +31,36 @@ git submodule update --init --recursive
 
 ## Usage
 
-All commands below should be run from the `CopyCat/` directory.
+All commands below should be run from the `DYSNM/` directory.
 
 ### Minimal Example — Single Video
 
 ```bash
 python scripts/run_pipeline.py \
-    --video /path/to/video.mp4 \
-    --robot booster_t1
+    --video /path/to/video.mp4 \
+    --robot booster_t1
 ```
 
 ### Minimal Example — Folder of Videos
 
 ```bash
 python scripts/run_pipeline.py \
-    --videos_path /path/to/folder/ \
-    --robot unitree_g1
+    --videos_path /path/to/folder/ \
+    --robot unitree_g1
 ```
 
 ### Full Example
 
 ```bash
 python scripts/run_pipeline.py \
-    --video /path/to/video.mp4 \
-    --video_name my_dance \
-    --robot booster_t1 \
-    --ckpt_path GENMO/inputs/checkpoints/s050000.ckpt \
-    --orig_fps 30 \
-    --save_path outputs/my_dance/robot_motion.pkl \
-    --record_video \
-    --rate_limit
+    --video /path/to/video.mp4 \
+    --video_name my_dance \
+    --robot booster_t1 \
+    --ckpt_path GENMO/inputs/checkpoints/s050000.ckpt \
+    --orig_fps 30 \
+    --save_path outputs/my_dance/robot_motion.pkl \
+    --record_video \
+    --rate_limit
 ```
 
 ---
@@ -100,10 +101,10 @@ python scripts/run_pipeline.py \
 ### Supported Robots
 
 ```
-unitree_g1        unitree_g1_with_hands    unitree_h1       unitree_h1_2
-booster_t1        booster_t1_29dof         stanford_toddy   fourier_n1
-engineai_pm01     kuavo_s45                hightorque_hi    galaxea_r1pro
-berkeley_humanoid_lite   booster_k1        pnd_adam_lite    openloong
+unitree_g1        unitree_g1_with_hands    unitree_h1       unitree_h1_2
+booster_t1        booster_t1_29dof         stanford_toddy   fourier_n1
+engineai_pm01     kuavo_s45                hightorque_hi    galaxea_r1pro
+berkeley_humanoid_lite   booster_k1        pnd_adam_lite    openloong
 tienkung
 ```
 
@@ -127,17 +128,17 @@ The pipeline runs three stages — **GENMO → GMR → PKL-to-CSV** — and prod
 ## Structure
 
 ```
-CopyCat/
+DYSNM/
 ├── scripts/
-│   ├── run_pipeline.py          ← main pipeline (venv)
-│   ├── run_pipeline_refpose.py  ← pipeline with sandwich mode (venv)
-│   └── run_pipeline_docker.py   ← pipeline via Docker (see section below)
-├── docker-compose.yml           ← Docker services definition
-├── GENMO/                       ← GENMO repository (submodule)
-│   ├── Dockerfile
-│   └── scripts/sandwich_runner.py
-└── GMR/                         ← GMR repository (submodule)
-    └── Dockerfile
+│   ├── run_pipeline.py          ← main pipeline (venv)
+│   ├── run_pipeline_refpose.py  ← pipeline with sandwich mode (venv)
+│   └── run_pipeline_docker.py   ← pipeline via Docker (see section below)
+├── docker-compose.yml           ← Docker services definition
+├── GENMO/                       ← GENMO repository (submodule)
+│   ├── Dockerfile
+│   └── scripts/sandwich_runner.py
+└── GMR/                         ← GMR repository (submodule)
+    └── Dockerfile
 ```
 
 ---
@@ -147,9 +148,9 @@ CopyCat/
 - If you encounter errors, check the README and issues for GENMO and GMR first.
 - Make sure all environments are activated and dependencies installed as described in each submodule.
 - For submodule updates:
-  ```bash
-  git submodule update --remote --checkout
-  ```
+  ```bash
+  git submodule update --remote --checkout
+  ```
 
 ---
 
@@ -162,8 +163,8 @@ GENMO and GMR can be run in separate containers communicating via Docker Compose
 - Docker Engine 20.10+
 - [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed and configured
 - Data in place before building:
-  - `GENMO/inputs/checkpoints/s050000.ckpt`
-  - `GMR/assets/` (robot models and SMPL-X body models)
+  - `GENMO/inputs/checkpoints/s050000.ckpt`
+  - `GMR/assets/` (robot models and SMPL-X body models)
 
 ### Build images
 
@@ -201,10 +202,10 @@ python scripts/run_pipeline_docker.py --video video.mp4 --robot booster_t1 --rec
 
 | Service | Image | Role |
 |---|---|---|
-| `genmo` | `copycat-genmo:latest` | SMPL-X inference from video (requires GPU/CUDA 12.1) |
-| `gmr` | `copycat-gmr:latest` | SMPL-X → robot motion retargeting (headless via EGL) |
+| `genmo` | `dysnm-genmo:latest` | SMPL-X inference from video (requires GPU/CUDA 12.1) |
+| `gmr` | `dysnm-gmr:latest` | SMPL-X → robot motion retargeting (headless via EGL) |
 
-**Shared volumes** (bind mounts relative to `CopyCat/`):
+**Shared volumes** (bind mounts relative to `DYSNM/`):
 
 | Host | genmo container | gmr container | Purpose |
 |---|---|---|---|
@@ -231,4 +232,4 @@ See the LICENSE files in each submodule for licensing information.
 
 ## Contact
 
-For questions or contributions, please refer to the GENMO and GMR repositories, or open an issue in CopyCat.
+For questions or contributions, please refer to the GENMO and GMR repositories, or open an issue in DYSNM.
