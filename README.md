@@ -1,11 +1,14 @@
 # Do you still need Mocap? Comparative Study between Inertial Suit Driven Motion and Video Extraction Motion for Humanoid Control
+# Do you still need Mocap? Comparative Study between Inertial Suit Driven Motion and Video Extraction Motion for Humanoid Control
 
+**DYSNM** is an end-to-end pipeline for human motion imitation, retargeting and policy training for humanoids robots, leveraging the GENMO, GMR and Whole Body Tracking frameworks. It enables the conversion of video input into robot motion, combining state-of-the-art motion generation (GENMO), retargeting (GMR) and policy training for Booster T1 and Unitree G1 (Whole Body Tracking).
 **DYSNM** is an end-to-end pipeline for human motion imitation, retargeting and policy training for humanoids robots, leveraging the GENMO, GMR and Whole Body Tracking frameworks. It enables the conversion of video input into robot motion, combining state-of-the-art motion generation (GENMO), retargeting (GMR) and policy training for Booster T1 and Unitree G1 (Whole Body Tracking).
 
 ---
 
 ## Acknowledgements
 
+DYSNM is built on top of:
 DYSNM is built on top of:
 - **GENMO** (Human motion generation)
 - **GMR** (General Motion Retargeting)
@@ -33,11 +36,14 @@ git submodule update --init --recursive
 ## Usage
 
 All commands below should be run from the `DYSNM/` directory.
+All commands below should be run from the `DYSNM/` directory.
 
 ### Minimal Example — Single Video
 
 ```bash
 python scripts/run_pipeline.py \
+    --video /path/to/video.mp4 \
+    --robot booster_t1
     --video /path/to/video.mp4 \
     --robot booster_t1
 ```
@@ -48,12 +54,22 @@ python scripts/run_pipeline.py \
 python scripts/run_pipeline.py \
     --videos_path /path/to/folder/ \
     --robot unitree_g1
+    --videos_path /path/to/folder/ \
+    --robot unitree_g1
 ```
 
 ### Full Example
 
 ```bash
 python scripts/run_pipeline.py \
+    --video /path/to/video.mp4 \
+    --video_name my_dance \
+    --robot booster_t1 \
+    --ckpt_path GENMO/inputs/checkpoints/s050000.ckpt \
+    --orig_fps 30 \
+    --save_path outputs/my_dance/robot_motion.pkl \
+    --record_video \
+    --rate_limit
     --video /path/to/video.mp4 \
     --video_name my_dance \
     --robot booster_t1 \
@@ -102,6 +118,10 @@ python scripts/run_pipeline.py \
 ### Supported Robots
 
 ```
+unitree_g1        unitree_g1_with_hands    unitree_h1       unitree_h1_2
+booster_t1        booster_t1_29dof         stanford_toddy   fourier_n1
+engineai_pm01     kuavo_s45                hightorque_hi    galaxea_r1pro
+berkeley_humanoid_lite   booster_k1        pnd_adam_lite    openloong
 unitree_g1        unitree_g1_with_hands    unitree_h1       unitree_h1_2
 booster_t1        booster_t1_29dof         stanford_toddy   fourier_n1
 engineai_pm01     kuavo_s45                hightorque_hi    galaxea_r1pro
@@ -245,6 +265,7 @@ docker compose --profile mtc run --rm motion-tracking-controller \
 
 ```
 DYSNM/
+DYSNM/
 ├── scripts/
 │   ├── run_pipeline.py          ← main pipeline (venv)
 │   ├── run_pipeline_refpose.py  ← pipeline with sandwich mode (venv)
@@ -267,9 +288,9 @@ DYSNM/
 - Make sure all environments are activated and dependencies installed as described in each submodule.
 - If new submodules are missing after clone: `git submodule update --init --recursive`.
 - For submodule updates:
-  ```bash
-  git submodule update --remote --checkout
-  ```
+  ```bash
+  git submodule update --remote --checkout
+  ```
 
 ---
 
@@ -296,8 +317,8 @@ All services are defined in [docker-compose.yml](docker-compose.yml) at the **DY
 - Docker Engine 20.10+
 - [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed and configured
 - Data in place before building:
-  - `GENMO/inputs/checkpoints/s050000.ckpt`
-  - `GMR/assets/` (robot models and SMPL-X body models)
+  - `GENMO/inputs/checkpoints/s050000.ckpt`
+  - `GMR/assets/` (robot models and SMPL-X body models)
 
 ### Build images
 
@@ -344,6 +365,7 @@ python scripts/run_pipeline_docker.py --video video.mp4 --robot booster_t1 --rec
 | `whole-body-tracking` | `whole-body-tracking:latest` | BeyondMimic / Isaac Lab (profile `wbt`; NGC base image) |
 | `motion-tracking-controller` | `motion-tracking-controller:latest` | ROS 2 Jazzy controller (profile `mtc`; X11 for simulation) |
 
+**Shared volumes** (bind mounts relative to `DYSNM/`):
 **Shared volumes** (bind mounts relative to `DYSNM/`):
 
 | Host | genmo container | gmr container | Purpose |

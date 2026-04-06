@@ -22,7 +22,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Caminhos relativos à raiz do CopyCat
 # ---------------------------------------------------------------------------
-COPYCAT_DIR = Path(__file__).resolve().parent
+COPYCAT_DIR = Path(__file__).resolve().parent.parent
 GENMO_DIR   = COPYCAT_DIR / "GENMO"
 GMR_DIR     = COPYCAT_DIR / "GMR"
 

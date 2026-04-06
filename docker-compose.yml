@@ -33,16 +33,17 @@ services:
       - ./GENMO/inputs:/app/inputs:ro
       # GENMO outputs — shared with the gmr service
       - ./GENMO/outputs:/app/outputs
+      # HuggingFace model cache — persisted on the host to avoid re-downloading
+      - ./GENMO/hf_cache:/hf_cache
 
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - CUDA_VISIBLE_DEVICES=0
       - HYDRA_FULL_ERROR=1
-      # Redirect caches to /tmp — required when running with --user uid:gid
-      # (/.cache and /.config are root-owned and inaccessible for non-root users)
-      - HF_HOME=/tmp/hf_cache
-      - TRANSFORMERS_CACHE=/tmp/hf_cache
-      - HUGGINGFACE_HUB_CACHE=/tmp/hf_cache
+      # Persistent cache mounted from the host (avoids re-downloading models)
+      - HF_HOME=/hf_cache
+      - TRANSFORMERS_CACHE=/hf_cache
+      - HUGGINGFACE_HUB_CACHE=/hf_cache
       - MPLCONFIGDIR=/tmp/matplotlib
       - XDG_CACHE_HOME=/tmp/.cache
       - YOLO_CONFIG_DIR=/tmp/ultralytics

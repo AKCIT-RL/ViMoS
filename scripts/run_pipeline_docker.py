@@ -53,7 +53,7 @@ GMR_GENMO_OUT_CONT = "/genmo_outputs"   # GENMO outputs read by GMR
 # Scripts inside containers
 GENMO_SCRIPT_CONT      = "scripts/demo/demo_text.py"
 GENMO_SANDWICH_CONT    = "scripts/sandwich_runner.py"
-GMR_SCRIPT_CONT        = "scripts/gvhmr_to_robot.py"
+GMR_SCRIPT_CONT        = "scripts/gvhmr_to_robot_docker.py"
 GMR_PKL_TO_CSV_CONT    = "scripts/batch_gmr_pkl_to_csv.py"
 
 DEFAULT_CKPT = GENMO_INPUTS_HOST / "checkpoints" / "s050000.ckpt"
