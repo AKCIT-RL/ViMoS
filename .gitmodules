@@ -7,3 +7,9 @@
 	path = GENMO
 	url = https://github.com/AKCIT-RL/GENMO.git
 	branch = dev/pettro
+[submodule "motion_tracking_controller"]
+	path = motion_tracking_controller
+	url = https://github.com/AKCIT-RL/motion_tracking_controller
+[submodule "whole_body_tracking"]
+	path = whole_body_tracking
+	url = https://github.com/AKCIT-RL/whole_body_tracking
