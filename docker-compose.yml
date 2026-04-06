@@ -1,15 +1,21 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# CopyCat — Docker Compose
+# DYSNM — Docker Compose (single file at repo root)
 #
-# Usage: do not run `docker compose up` directly.
-# The orchestrator scripts/run_pipeline_docker.py invokes services with:
+# GENMO + GMR (default): do not run `docker compose up` for the full pipeline.
+# The orchestrator scripts/run_pipeline_docker.py invokes:
 #   docker compose run --rm genmo <command>
 #   docker compose run --rm gmr   <command>
 #
+# Optional stacks (profiles — not built unless you pass --profile):
+#   docker compose --profile wbt  build | run   # whole_body_tracking (Isaac Lab)
+#   docker compose --profile mtc  build | run   # motion_tracking_controller (ROS 2)
+#
 # Build:
-#   docker compose build
-#   docker compose build genmo   # build GENMO only
-#   docker compose build gmr     # build GMR only
+#   docker compose build                          # genmo + gmr only
+#   docker compose --profile wbt build            # + whole-body-tracking
+#   docker compose --profile mtc build            # + motion-tracking-controller
+#   docker compose build genmo
+#   docker compose build gmr
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
@@ -88,3 +94,67 @@ services:
 
     stdin_open: false
     tty: false
+
+  # ── whole_body_tracking: Isaac Lab / BeyondMimic (profile wbt) ─────────────
+  whole-body-tracking:
+    profiles: [wbt]
+    build:
+      context: ./whole_body_tracking
+      dockerfile: Dockerfile
+    image: whole-body-tracking:latest
+    working_dir: /workspace/whole_body_tracking
+    runtime: nvidia
+    network_mode: host
+    stdin_open: true
+    tty: true
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - ACCEPT_EULA=Y
+      - PRIVACY_CONSENT=Y
+
+    volumes:
+      - isaac-cache-kit:/isaac-sim/kit/cache
+      - isaac-cache-ov:/root/.cache/ov
+      - isaac-cache-pip:/root/.cache/pip
+      - isaac-cache-gl:/root/.cache/nvidia/GLCache
+      - isaac-cache-compute:/root/.nv/ComputeCache
+      - isaac-logs:/root/.nvidia-omniverse/logs
+      - isaac-data:/root/.local/share/ov/data
+      - ./whole_body_tracking/logs:/workspace/whole_body_tracking/logs
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # ── motion_tracking_controller: ROS 2 Jazzy (profile mtc) ───────────────────
+  motion-tracking-controller:
+    profiles: [mtc]
+    build:
+      context: ./motion_tracking_controller
+      dockerfile: Dockerfile
+    image: motion-tracking-controller:latest
+    network_mode: host
+    stdin_open: true
+    tty: true
+
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Optional: place policy.onnx here or mount another path at run time
+      - ./motion_tracking_controller/data:/workspace/data
+
+volumes:
+  isaac-cache-kit:
+  isaac-cache-ov:
+  isaac-cache-pip:
+  isaac-cache-gl:
+  isaac-cache-compute:
+  isaac-logs:
+  isaac-data:
