@@ -128,9 +128,9 @@ The pipeline runs three stages — **GENMO → GMR → PKL-to-CSV** — and prod
 
 ## BeyondMimic: after retargeting 
 
-After **GENMO → GMR**, CSV motion files live under `GMR/output/csv/` (see **Outputs** above). The **whole_body_tracking** submodule converts retargeted CSV into training assets, trains policies in Isaac Lab, and exports ONNX; **motion_tracking_controller** runs that policy in MuJoCo or on hardware (ROS 2).
+After **GENMO → GMR**, CSV motion files live under `GMR/output/csv/` (see **Outputs** above). The **whole_body_tracking** submodule converts retargeted CSV into training assets and trains in Isaac Lab. **Evaluation / export** depends on the robot: **Unitree G1** policies are typically exported as **ONNX** from `play.py`; **Booster T1** uses **TorchScript JIT** (see [whole_body_tracking/README.md](whole_body_tracking/README.md) — Policy Evaluation). **motion_tracking_controller** runs the deployed policy in MuJoCo or on hardware (ROS 2).
 
-**Flow:** GMR CSV → `whole_body_tracking` (`csv_to_npz.py`, training, export) → ONNX → `motion_tracking_controller` (`mujoco.launch.py` / `real.launch.py`).
+**Flow:** GMR CSV → `whole_body_tracking` (`csv_to_npz.py`, `train.py`, `play.py` export) → ONNX (G1) or JIT (T1) → `motion_tracking_controller` (`mujoco.launch.py` / `real.launch.py`).
 
 ### whole_body_tracking (training)
 
@@ -152,6 +152,71 @@ docker compose --profile wbt run --rm \
   whole-body-tracking
 ```
 
+#### Unitree G1 vs Booster T1
+
+- **Match retargeting to training:** use the same robot in DYSNM as in BeyondMimic. Your GMR CSV under `GMR/output/csv/` should come from `--robot unitree_g1` or `--robot booster_t1` in `run_pipeline.py` / `run_pipeline_docker.py`, and you pass the matching `--robot` to `csv_to_npz.py` (`unitree_g1` is the default).
+
+**Convert CSV → NPZ (inside the container, from `/workspace/whole_body_tracking`):**
+
+```bash
+# Unitree G1 (default)
+python scripts/csv_to_npz.py \
+  --input_file /workspace/motions/{motion}.csv --input_fps 30 \
+  --output_name {motion} \
+  --wandb_project {artifact_project} \
+  --headless
+
+# Booster T1
+python scripts/csv_to_npz.py \
+  --input_file /workspace/motions/{motion}.csv --input_fps 30 \
+  --output_name {motion} \
+  --robot booster_t1 \
+  --wandb_project {artifact_project} \
+  --headless
+```
+
+**Training tasks (`train.py`):** common choices (full table in [whole_body_tracking/README.md](whole_body_tracking/README.md)):
+
+| Robot | Task ID | Notes |
+| --- | --- | --- |
+| G1 | `Tracking-Flat-G1-v0` | Full observations; also `Tracking-Flat-G1-Wo-State-Estimation-v0`, `Tracking-Flat-G1-Low-Freq-v0` |
+| T1 | `Tracking-Flat-T1-Wo-State-Estimation-v0` | **Use only this task for T1** — Booster hardware has no full pose/velocity variant registered upstream |
+
+```bash
+# G1
+python scripts/rsl_rl/train.py \
+  --task=Tracking-Flat-G1-v0 \
+  --registry_name {entity}/{artifact_project}/{motion} \
+  --headless --logger wandb \
+  --log_project_name {training_project} --run_name {run_name}
+
+# T1
+python scripts/rsl_rl/train.py \
+  --task=Tracking-Flat-T1-Wo-State-Estimation-v0 \
+  --registry_name {entity}/{artifact_project}/{motion} \
+  --headless --logger wandb \
+  --log_project_name {training_project} --run_name {run_name}
+```
+
+**Evaluation (`play.py`):** export format follows the task — **G1 → ONNX**, **T1 → TorchScript JIT**.
+
+```bash
+python scripts/rsl_rl/play.py --task=Tracking-Flat-G1-v0 --num_envs=2 --wandb_path={wandb-run-path}
+python scripts/rsl_rl/play.py --task=Tracking-Flat-T1-Wo-State-Estimation-v0 --num_envs=2 --wandb_path={wandb-run-path}
+```
+
+**Same commands from the DYSNM root via Compose** (working directory in the image is already `/workspace/whole_body_tracking`; use `-c` with the image `ENTRYPOINT` bash, not `bash -c`):
+
+```bash
+docker compose --profile wbt run -T --rm whole-body-tracking -c \
+  'python scripts/rsl_rl/train.py --task=Tracking-Flat-G1-v0 --registry_name entity/proj/motion --headless --logger wandb --log_project_name mytrain --run_name run1'
+
+docker compose --profile wbt run -T --rm whole-body-tracking -c \
+  'python scripts/rsl_rl/train.py --task=Tracking-Flat-T1-Wo-State-Estimation-v0 --registry_name entity/proj/motion --headless --logger wandb --log_project_name mytrain --run_name run1'
+```
+
+If `python` is not on `PATH` in non-interactive runs, use `/isaac-sim/python.sh` instead of `python` or see [whole_body_tracking/README_DOCKER.md](whole_body_tracking/README_DOCKER.md).
+
 - The submodule’s own [whole_body_tracking/docker-compose.yaml](whole_body_tracking/docker-compose.yaml) is kept for standalone clones of that repository; in DYSNM the **canonical** Compose file is at the repo root.
 
 ### motion_tracking_controller (deployment)
@@ -165,7 +230,7 @@ docker compose --profile mtc build
 docker compose --profile mtc run --rm motion-tracking-controller
 ```
 
-- Place a policy at `motion_tracking_controller/data/policy.onnx` (host path; mounted read-write at `/workspace/data` in the container), or pass extra `-v` mounts and launch arguments as in the submodule README, for example:
+- Place a policy at `motion_tracking_controller/data/policy.onnx` for **G1 / ONNX** exports, or the **TorchScript** artefact your T1 pipeline produces, under a path you mount to `/workspace/data` (see submodule README). Example with ONNX:
 
 ```bash
 docker compose --profile mtc run --rm motion-tracking-controller \
