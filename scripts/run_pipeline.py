@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-CopyCat — Pipeline completa: Vídeo → SMPL (GENMO) → Movimento de Robô (GMR)
+CopyCat — Full pipeline: Video → SMPL (GENMO) → Robot Motion (GMR)
 
-Uso mínimo:
-    python run_pipeline.py --video /caminho/video.mp4 --robot booster_t1
+Minimal usage:
+    python run_pipeline.py --video /path/to/video.mp4 --robot booster_t1
 
-Processar uma pasta inteira de vídeos:
-    python run_pipeline.py --video /caminho/para/pasta/ --robot unitree_g1
+Process an entire folder of videos:
+    python run_pipeline.py --video /path/to/folder/ --robot unitree_g1
 """
 
 import argparse
@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Caminhos relativos à raiz do CopyCat
+# Paths relative to CopyCat root
 # ---------------------------------------------------------------------------
 COPYCAT_DIR = Path(__file__).resolve().parent
 GENMO_DIR   = COPYCAT_DIR / "GENMO"
@@ -27,45 +27,44 @@ GENMO_SCRIPT = GENMO_DIR / "scripts" / "demo" / "demo_text.py"
 GMR_SCRIPT        = GMR_DIR / "scripts" / "gvhmr_to_robot.py"
 GMR_PKL_TO_CSV    = GMR_DIR / "scripts" / "batch_gmr_pkl_to_csv.py"
 
-# Pastas de saída do GMR
+# GMR output folders
 GMR_OUTPUT_PKL = GMR_DIR / "output" / "pkl"
 GMR_OUTPUT_CSV = GMR_DIR / "output" / "csv"
 GMR_VIDEOS_DIR = GMR_DIR / "videos"
 
-# Checkpoint padrão do GENMO
+# Default GENMO checkpoint
 DEFAULT_CKPT = GENMO_DIR / "inputs" / "checkpoints" / "s050000.ckpt"
 
 # ---------------------------------------------------------------------------
-# Python executável de cada ferramenta
-# Cada sub-script roda com o venv do seu próprio projeto, igual a quando
-# você os executava manualmente.
+# Python executable for each tool
+# Each sub-script runs with its own project venv, same as running manually.
 # ---------------------------------------------------------------------------
 def _find_python(venv_dirs: list[Path]) -> str:
-    """Retorna o primeiro python encontrado dentre os venvs candidatos."""
+    """Returns the first python found among the candidate venvs."""
     for venv in venv_dirs:
         candidate = venv / "bin" / "python"
         if candidate.exists():
             return str(candidate)
-    # fallback: Python atual
+    # fallback: current Python
     return sys.executable
 
-# Busca o Python correto para cada sub-projeto.
+# Find the correct Python for each sub-project.
 # GENMO → CopyCat/GENMO/.venv
 # GMR   → CopyCat/GMR/.venv
 GENMO_PYTHON = _find_python([
     GENMO_DIR / ".venv",                        # CopyCat/GENMO/.venv
-    COPYCAT_DIR.parent / "GENMO" / ".venv",    # motion/GENMO/.venv  (legado)
+    COPYCAT_DIR.parent / "GENMO" / ".venv",    # motion/GENMO/.venv  (legacy)
 ])
 GMR_PYTHON = _find_python([
-    GMR_DIR / ".venv",                          # CopyCat/GMR/.venv   ← atual
-    COPYCAT_DIR / ".venv",                      # CopyCat/.venv       (legado)
+    GMR_DIR / ".venv",                          # CopyCat/GMR/.venv   ← current
+    COPYCAT_DIR / ".venv",                      # CopyCat/.venv       (legacy)
     COPYCAT_DIR.parent / "GMR" / ".venv",
 ])
 
 print(f"[Config] GENMO Python : {GENMO_PYTHON}")
 print(f"[Config] GMR   Python : {GMR_PYTHON}")
 
-# Robôs suportados pelo GMR
+# Robots supported by GMR
 SUPPORTED_ROBOTS = [
     "unitree_g1", "unitree_g1_with_hands", "unitree_h1", "unitree_h1_2",
     "booster_t1", "booster_t1_29dof", "stanford_toddy", "fourier_n1",
@@ -80,21 +79,21 @@ SUPPORTED_ROBOTS = [
 # ---------------------------------------------------------------------------
 
 def find_videos_in_folder(folder: Path) -> list[Path]:
-    """Busca todos os .mp4 dentro de uma pasta e subpastas (recursivo)."""
+    """Finds all .mp4 files inside a folder and subfolders (recursive)."""
     videos = sorted(folder.rglob("*.mp4"))
     if not videos:
-        print(f"[AVISO] Nenhum arquivo .mp4 encontrado em: {folder}")
+        print(f"[WARN] No .mp4 files found in: {folder}")
     return videos
 
 
 def run_genmo(video_path: Path, video_name: str, output_dir: Path, args) -> Path:
     """
-    Executa o GENMO (demo_text.py) e retorna o caminho para hmr4d_results.pt.
+    Runs GENMO (demo_text.py) and returns the path to hmr4d_results.pt.
     """
     hmr4d_results = output_dir / "hmr4d_results.pt"
 
     if hmr4d_results.exists() and not args.force:
-        print(f"[GENMO] Pulando — resultado já existe: {hmr4d_results}")
+        print(f"[GENMO] Skipping — result already exists: {hmr4d_results}")
         return hmr4d_results
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -115,17 +114,17 @@ def run_genmo(video_path: Path, video_name: str, output_dir: Path, args) -> Path
         cmd.append("--pose")
 
     print("\n" + "=" * 60)
-    print(f"[GENMO] Processando: {video_path.name}")
+    print(f"[GENMO] Processing: {video_path.name}")
     print("=" * 60)
-    print("Comando:", " ".join(cmd))
+    print("Command:", " ".join(cmd))
 
     result = subprocess.run(cmd, cwd=str(GENMO_DIR))
     if result.returncode != 0:
-        print(f"[ERRO] GENMO falhou para: {video_path.name}")
+        print(f"[ERROR] GENMO failed for: {video_path.name}")
         sys.exit(result.returncode)
 
     if not hmr4d_results.exists():
-        print(f"[ERRO] hmr4d_results.pt não encontrado em: {hmr4d_results}")
+        print(f"[ERROR] hmr4d_results.pt not found at: {hmr4d_results}")
         sys.exit(1)
 
     return hmr4d_results
@@ -133,17 +132,17 @@ def run_genmo(video_path: Path, video_name: str, output_dir: Path, args) -> Path
 
 def run_gmr(hmr4d_results: Path, video_name: str, args):
     """
-    Executa o GMR (gvhmr_to_robot.py) a partir do hmr4d_results.pt gerado pelo GENMO.
-    O PKL é salvo em GMR/output/pkl/<video_name>.pkl.
+    Runs GMR (gvhmr_to_robot.py) from the hmr4d_results.pt generated by GENMO.
+    PKL is saved to GMR/output/pkl/<video_name>.pkl.
     """
     if args.save_path:
         save_path = Path(args.save_path)
     else:
-        # Salva em GMR/output/pkl/ com nome {robot}_{video_name}.pkl
+        # Save to GMR/output/pkl/ with name {robot}_{video_name}.pkl
         GMR_OUTPUT_PKL.mkdir(parents=True, exist_ok=True)
         save_path = GMR_OUTPUT_PKL / f"{args.robot}_{video_name}.pkl"
 
-    # Vídeo de visualização: GMR/videos/<robot>_<video_name>.mp4
+    # Visualization video: GMR/videos/<robot>_<video_name>.mp4
     GMR_VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
     video_save_path = GMR_VIDEOS_DIR / f"{args.robot}_{video_name}.mp4"
 
@@ -166,46 +165,46 @@ def run_gmr(hmr4d_results: Path, video_name: str, args):
     env = os.environ.copy()
     if args.headless:
         env["MUJOCO_GL"] = "egl"
-        # xvfb-run fornece display virtual → launch_passive não abre janela real
+        # xvfb-run provides a virtual display → launch_passive won't open a real window
         xvfb = shutil.which("xvfb-run")
         if xvfb:
             cmd = [xvfb, "-a", "--server-args=-screen 0 1024x768x24"] + cmd
         else:
-            print("[AVISO] xvfb-run não encontrado. Instale com: sudo apt-get install -y xvfb")
-            print("[AVISO] O MuJoCo pode abrir uma janela mesmo assim.")
+            print("[WARN] xvfb-run not found. Install with: sudo apt-get install -y xvfb")
+            print("[WARN] MuJoCo may still open a window.")
 
     print("\n" + "=" * 60)
-    print(f"[GMR] Retargeting para {args.robot}: {video_name}")
+    print(f"[GMR] Retargeting for {args.robot}: {video_name}")
     if args.headless:
-        print("[GMR] Headless (xvfb-run + MUJOCO_GL=egl)" if shutil.which("xvfb-run") else "[GMR] Headless parcial (MUJOCO_GL=egl apenas)")
+        print("[GMR] Headless (xvfb-run + MUJOCO_GL=egl)" if shutil.which("xvfb-run") else "[GMR] Partial headless (MUJOCO_GL=egl only)")
     if args.record_video:
-        print(f"[GMR] Vídeo → {video_save_path}")
+        print(f"[GMR] Video → {video_save_path}")
     print("=" * 60)
 
     result = subprocess.run(cmd, cwd=str(GMR_DIR), env=env)
     if result.returncode != 0:
-        print(f"[ERRO] GMR falhou para: {video_name}")
+        print(f"[ERROR] GMR failed for: {video_name}")
         sys.exit(result.returncode)
 
-    print(f"[GMR] PKL salvo em: {save_path}")
+    print(f"[GMR] PKL saved to: {save_path}")
     return save_path
 
 
 def run_pkl_to_csv(pkl_path: Path, video_name: str, robot: str):
     """
-    Converte um único arquivo .pkl do GMR em CSV e salva em GMR/output/csv/.
-    O CSV terá o nome {robot}_{video_name}.csv.
+    Converts a single GMR .pkl file to CSV and saves it to GMR/output/csv/.
+    The CSV will be named {robot}_{video_name}.csv.
     """
     GMR_OUTPUT_CSV.mkdir(parents=True, exist_ok=True)
     csv_path = GMR_OUTPUT_CSV / f"{robot}_{video_name}.csv"
 
     print("\n" + "=" * 60)
-    print(f"[CSV] Convertendo PKL → CSV: {pkl_path.name}")
-    print(f"[CSV] Destino: {csv_path}")
+    print(f"[CSV] Converting PKL → CSV: {pkl_path.name}")
+    print(f"[CSV] Destination: {csv_path}")
     print("=" * 60)
 
-    # batch_gmr_pkl_to_csv lê todos os .pkl de uma pasta e salva em <pasta>/csv/
-    # Passamos a pasta do pkl e depois movemos o CSV gerado para GMR/output/csv/
+    # batch_gmr_pkl_to_csv reads all .pkl from a folder and saves to <folder>/csv/
+    # We pass the pkl folder and then move the generated CSV to GMR/output/csv/
     import tempfile
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_pkl = Path(tmp_dir) / pkl_path.name
@@ -218,23 +217,23 @@ def run_pkl_to_csv(pkl_path: Path, video_name: str, robot: str):
         ]
         result = subprocess.run(cmd, cwd=str(GMR_DIR))
         if result.returncode != 0:
-            print(f"[ERRO] Conversão PKL→CSV falhou para: {pkl_path.name}")
+            print(f"[ERROR] PKL→CSV conversion failed for: {pkl_path.name}")
             return None
 
-        # O script salva em <tmp_dir>/csv/<stem>.csv
+        # Script saves to <tmp_dir>/csv/<stem>.csv
         generated_csv = Path(tmp_dir) / "csv" / pkl_path.with_suffix(".csv").name
         if generated_csv.exists():
             shutil.move(str(generated_csv), str(csv_path))
-            print(f"[CSV] Salvo em: {csv_path}")
+            print(f"[CSV] Saved to: {csv_path}")
         else:
-            print(f"[AVISO] CSV gerado não encontrado: {generated_csv}")
+            print(f"[WARN] Generated CSV not found: {generated_csv}")
             return None
 
     return csv_path
 
 
 def process_video(video_path: Path, args):
-    """Roda a pipeline completa (GENMO + GMR) para um único vídeo."""
+    """Runs the full pipeline (GENMO + GMR) for a single video."""
     video_name = video_path.stem
 
     if args.output_dir:
@@ -243,18 +242,18 @@ def process_video(video_path: Path, args):
         output_dir = GENMO_DIR / "outputs" / "demo" / video_name
 
     print(f"\n{'#' * 60}")
-    print(f"# Vídeo : {video_path.name}")
-    print(f"# Saída : {output_dir}")
-    print(f"# Robô  : {args.robot}")
+    print(f"# Video  : {video_path.name}")
+    print(f"# Output : {output_dir}")
+    print(f"# Robot  : {args.robot}")
     print(f"{'#' * 60}")
 
-    # Etapa 1 — GENMO: vídeo → SMPL
+    # Stage 1 — GENMO: video → SMPL
     hmr4d_results = run_genmo(video_path, video_name, output_dir, args)
 
-    # Etapa 2 — GMR: SMPL → PKL do movimento do robô
+    # Stage 2 — GMR: SMPL → robot motion PKL
     save_path = run_gmr(hmr4d_results, video_name, args)
 
-    # Etapa 3 — Converter PKL → CSV
+    # Stage 3 — Convert PKL → CSV
     run_pkl_to_csv(save_path, video_name, args.robot)
 
     return hmr4d_results, save_path
@@ -266,20 +265,20 @@ def process_video(video_path: Path, args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="CopyCat — Pipeline completa: Vídeo → SMPL (GENMO) → Robô (GMR)",
+        description="CopyCat — Full pipeline: Video → SMPL (GENMO) → Robot (GMR)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
 
-    # ── Entrada ──────────────────────────────────────────────────────────────
+    # ── Input ────────────────────────────────────────────────────────────────
     input_group = parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument(
         "--video", "-v",
-        help="Arquivo .mp4 único para processar.",
+        help="Single .mp4 file to process.",
     )
     input_group.add_argument(
         "--videos_path",
-        help="Pasta com vídeos .mp4 (busca recursiva em subpastas). "
+        help="Folder with .mp4 videos (recursive search in subfolders). "
              "Ex: --videos_path fut_do_t1/",
     )
 
@@ -287,48 +286,48 @@ def main():
     parser.add_argument(
         "--video_name",
         default=None,
-        help="Nome usado na pasta de saída (padrão: stem do arquivo de vídeo). "
-             "Ignorado quando --video é uma pasta.",
+        help="Name used in the output folder (default: video file stem). "
+             "Ignored when --video is a folder.",
     )
     parser.add_argument(
         "--output_dir",
         default=None,
-        help="Pasta de saída para os resultados do GENMO "
-             "(padrão: GENMO/outputs/demo/<video_name>).",
+        help="Output folder for GENMO results "
+             "(default: GENMO/outputs/demo/<video_name>).",
     )
     parser.add_argument(
         "--ckpt_path",
         default=str(DEFAULT_CKPT),
-        help=f"Checkpoint do modelo GENMO (padrão: {DEFAULT_CKPT}).",
+        help=f"GENMO model checkpoint (default: {DEFAULT_CKPT}).",
     )
     parser.add_argument(
         "--exp",
         default="genmo_lg",
-        help="Configuração de experimento do GENMO (padrão: genmo_lg).",
+        help="GENMO experiment config (default: genmo_lg).",
     )
     parser.add_argument(
         "--orig_fps",
         type=int,
         default=30,
-        help="FPS original do vídeo de entrada (padrão: 30).",
+        help="Original FPS of the input video (default: 30).",
     )
     parser.add_argument(
         "--static_cam",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Assume câmera estática (padrão: ativo). Use --no-static-cam para SLAM.",
+        help="Assume static camera (default: on). Use --no-static-cam for SLAM.",
     )
     parser.add_argument(
         "--force",
         action="store_true",
         default=False,
-        help="Força reprocessamento mesmo que hmr4d_results.pt já exista.",
+        help="Force reprocessing even if hmr4d_results.pt already exists.",
     )
     parser.add_argument(
         "--pose",
         action="store_true",
         default=False,
-        help="Gera PNGs de debug de pose/YOLO no GENMO (desligado por padrão).",
+        help="Generate pose/YOLO debug PNGs in GENMO (off by default).",
     )
 
     # ── GMR ──────────────────────────────────────────────────────────────────
@@ -336,108 +335,108 @@ def main():
         "--robot", "-r",
         choices=SUPPORTED_ROBOTS,
         default="unitree_g1",
-        help="Robô-alvo para o retargeting (padrão: unitree_g1).",
+        help="Target robot for retargeting (default: unitree_g1).",
     )
     parser.add_argument(
         "--save_path",
         default=None,
-        help="Caminho para salvar o movimento do robô (.pkl). "
-             "Padrão: <output_dir>/robot_motion_<robot>.pkl",
+        help="Path to save the robot motion (.pkl). "
+             "Default: <output_dir>/robot_motion_<robot>.pkl",
     )
     parser.add_argument(
         "--record_video",
         action="store_true",
         default=False,
-        help="Grava um vídeo da visualização do GMR.",
+        help="Record a video of the GMR visualization.",
     )
     parser.add_argument(
         "--rate_limit",
         action="store_true",
         default=False,
-        help="Limita a taxa de reprodução ao FPS do movimento humano.",
+        help="Limit playback rate to the human motion FPS.",
     )
     parser.add_argument(
         "--loop",
         action="store_true",
         default=False,
-        help="Repete o movimento no viewer indefinidamente.",
+        help="Loop the motion in the viewer indefinitely.",
     )
     parser.add_argument(
         "--headless",
         action="store_true",
         default=False,
-        help="Roda o GMR/MuJoCo em modo headless (sem abrir janela). "
-             "Define MUJOCO_GL=egl. Útil para SSH ou servidores sem display.",
+        help="Run GMR/MuJoCo in headless mode (no window). "
+             "Sets MUJOCO_GL=egl. Useful for SSH or display-less servers.",
     )
 
     args = parser.parse_args()
 
-    # ── Validações básicas ────────────────────────────────────────────────────
+    # ── Basic validation ──────────────────────────────────────────────────────
     if not GENMO_SCRIPT.exists():
-        print(f"[ERRO] Script GENMO não encontrado: {GENMO_SCRIPT}")
+        print(f"[ERROR] GENMO script not found: {GENMO_SCRIPT}")
         sys.exit(1)
     if not GMR_SCRIPT.exists():
-        print(f"[ERRO] Script GMR não encontrado: {GMR_SCRIPT}")
+        print(f"[ERROR] GMR script not found: {GMR_SCRIPT}")
         sys.exit(1)
 
     print(f"[Config] GENMO Python : {GENMO_PYTHON}")
     print(f"[Config] GMR   Python : {GMR_PYTHON}")
 
-    # ── Modo pasta (--videos_path) ────────────────────────────────────────────
+    # ── Folder mode (--videos_path) ───────────────────────────────────────────
     if args.videos_path:
         folder = Path(args.videos_path).resolve()
         if not folder.is_dir():
-            print(f"[ERRO] Pasta não encontrada: {folder}")
+            print(f"[ERROR] Folder not found: {folder}")
             sys.exit(1)
         videos = find_videos_in_folder(folder)
         if not videos:
             sys.exit(1)
-        print(f"[INFO] {len(videos)} vídeo(s) encontrado(s) em: {folder}")
+        print(f"[INFO] {len(videos)} video(s) found in: {folder}")
 
         results = []
         for i, vp in enumerate(videos, 1):
             print(f"\n[{i}/{len(videos)}] {vp.name}")
             try:
-                hmr, save = process_video(vp, args)
+                _, save = process_video(vp, args)
                 results.append((vp, save, None))
             except SystemExit as e:
-                print(f"[AVISO] Pulando {vp.name} (erro {e.code})")
+                print(f"[WARN] Skipping {vp.name} (error {e.code})")
                 results.append((vp, None, e.code))
 
         print("\n" + "=" * 60)
-        print(f"[CONCLUÍDO] {len(videos)} vídeo(s) processado(s).")
+        print(f"[DONE] {len(videos)} video(s) processed.")
         for vp, save, err in results:
-            print(f"  {vp.name} → {str(save) if save else f'ERRO ({err})'}")
+            print(f"  {vp.name} → {str(save) if save else f'ERROR ({err})'}")
         return
 
-    # ── Modo arquivo único (--video) ──────────────────────────────────────────
+    # ── Single file mode (--video) ────────────────────────────────────────────
     video_input = Path(args.video).resolve()
     if not video_input.exists():
-        print(f"[ERRO] Caminho não encontrado: {video_input}")
+        print(f"[ERROR] Path not found: {video_input}")
         sys.exit(1)
     if video_input.suffix.lower() != ".mp4":
-        print(f"[AVISO] O arquivo não é .mp4: {video_input}")
+        print(f"[WARN] File is not .mp4: {video_input}")
 
     if args.video_name:
         _process_single(video_input, args.video_name, args)
     else:
         process_video(video_input, args)
 
-    print("\n[CONCLUÍDO] Pipeline finalizada.")
+    print("\n[DONE] Pipeline finished.")
 
 
 def _process_single(video_path: Path, video_name: str, args):
-    """Roda a pipeline completa para um único vídeo com nome customizado."""
+    """Runs the full pipeline for a single video with a custom name."""
     if args.output_dir:
         output_dir = Path(args.output_dir)
     else:
         output_dir = GENMO_DIR / "outputs" / "demo" / video_name
 
     print(f"\n{'#' * 60}")
-    print(f"# Vídeo : {video_path.name}")
-    print(f"# Nome  : {video_name}")
-    print(f"# Saída : {output_dir}")
-    print(f"# Robô  : {args.robot}")
+    print(f"# Video  : {video_path.name}")
+    print(f"# Name   : {video_name}")
+    print(f"# Output : {output_dir}")
+    print(f"# Robot  : {args.robot}")
     print(f"{'#' * 60}")
 
     hmr4d_results = run_genmo(video_path, video_name, output_dir, args)

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-CopyCat — Pipeline completa: Vídeo → SMPL (GENMO) → Movimento de Robô (GMR)
+CopyCat — Full pipeline: Video → SMPL (GENMO) → Robot Motion (GMR)
 
-Uso mínimo:
-    python run_pipeline.py --video /caminho/video.mp4 --robot booster_t1
+Minimal usage:
+    python run_pipeline.py --video /path/to/video.mp4 --robot booster_t1
 
-Modo sandwich (padrão): gera prefixo "stand still" + núcleo (vídeo) + sufixo "stand still"
-antes de passar para o GMR, garantindo transição estável para o T1.
+Sandwich mode (default): generates a "stand still" prefix + core (video) + "stand still" suffix
+before passing to GMR, ensuring a stable transition for the T1.
 
-Processar uma pasta inteira de vídeos:
-    python run_pipeline.py --video /caminho/para/pasta/ --robot unitree_g1
+Process an entire folder of videos:
+    python run_pipeline.py --video /path/to/folder/ --robot unitree_g1
 """
 
 import argparse
@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Caminhos relativos à raiz do CopyCat
+# Paths relative to CopyCat root
 # ---------------------------------------------------------------------------
 COPYCAT_DIR = Path(__file__).resolve().parent.parent
 GENMO_DIR   = COPYCAT_DIR / "GENMO"
@@ -30,22 +30,22 @@ GENMO_SCRIPT      = GENMO_DIR / "scripts" / "demo" / "demo_text.py"
 GMR_SCRIPT        = GMR_DIR / "scripts" / "gvhmr_to_robot.py"
 GMR_PKL_TO_CSV    = GMR_DIR / "scripts" / "batch_gmr_pkl_to_csv.py"
 
-# Pastas de saída do GMR
+# GMR output folders
 GMR_OUTPUT_PKL = GMR_DIR / "output" / "pkl"
 GMR_OUTPUT_CSV = GMR_DIR / "output" / "csv"
 GMR_VIDEOS_DIR = GMR_DIR / "videos"
 
-# Checkpoint padrão do GENMO
+# Default GENMO checkpoint
 DEFAULT_CKPT = GENMO_DIR / "inputs" / "checkpoints" / "s050000.ckpt"
 
-# Parâmetros de âncora (sandwich)
-ANCHOR_FPS    = 30          # FPS fixo — compatibilidade IsaacLab / controlador T1
-ANCHOR_FRAMES = 30          # prefixo: 1 s × 30 fps
-SUFFIX_FRAMES = 60          # sufixo:  2 s × 30 fps
+# Anchor (sandwich) parameters
+ANCHOR_FPS    = 30          # fixed FPS — IsaacLab / T1 controller compatibility
+ANCHOR_FRAMES = 30          # prefix: 1 s × 30 fps
+SUFFIX_FRAMES = 60          # suffix:  2 s × 30 fps
 
-# Pose corporal neutra usada nas âncoras de stand still.
-# SMPL-X body_pose: 21 juntas × 3 (axis-angle) = 63 valores.
-# Joint map (body_pose, excluindo root/pelvis):
+# Neutral body pose used in stand still anchors.
+# SMPL-X body_pose: 21 joints × 3 (axis-angle) = 63 values.
+# Joint map (body_pose, excluding root/pelvis):
 #   0  left_hip      [0:3]    |  11 neck          [33:36]
 #   1  right_hip     [3:6]    |  12 left_collar   [36:39]
 #   2  spine1        [6:9]    |  13 right_collar  [39:42]
@@ -62,9 +62,9 @@ NEUTRAL_BODY_POSE_DIM = 63
 
 def _extract_yaw_orient(global_orient_aa):
     """
-    Recebe um axis-angle (3,) de global_orient e retorna outro axis-angle
-    com apenas o componente de yaw (rotação em torno do eixo Y) preservado.
-    Pitch e roll são zerados → robô upright na mesma direção do vídeo.
+    Takes a global_orient axis-angle (3,) and returns another axis-angle
+    with only the yaw component (rotation around Y axis) preserved.
+    Pitch and roll are zeroed → robot upright facing the same direction as in the video.
     """
     import torch
     aa = global_orient_aa.float()
@@ -80,11 +80,11 @@ def _extract_yaw_orient(global_orient_aa):
     K[2, 0], K[2, 1] = -axis[1],  axis[0]
     R = torch.eye(3) + angle.sin() * K + (1 - angle.cos()) * (K @ K)
 
-    # Extrair yaw: projetar o vetor "forward" (coluna Z de R) no plano XZ
+    # Extract yaw: project the "forward" vector (column Z of R) onto the XZ plane
     fwd = R[:, 2]
     yaw = torch.atan2(fwd[0], fwd[2])
 
-    # Construir matriz de rotação pura em Y (yaw only)
+    # Build pure Y rotation matrix (yaw only)
     c, s = yaw.cos(), yaw.sin()
     Ry = torch.tensor([[c, 0, s], [0, 1, 0], [-s, 0, c]])
 
@@ -98,25 +98,25 @@ def _extract_yaw_orient(global_orient_aa):
 
 def _make_standing_body_pose():
     """
-    Cria um tensor (63,) com pose ereta e braços ao longo do corpo.
-    Ajuste os valores abaixo com --neutral_pose_path se necessário.
+    Creates a (63,) tensor with an upright pose and arms along the body.
+    Adjust the values below with --neutral_pose_path if needed.
     """
     import torch as _t
     bp = _t.zeros(NEUTRAL_BODY_POSE_DIM)
-    # Collars: leve rotação interna para posicionar os ombros naturalmente
+    # Collars: slight inward rotation to position shoulders naturally
     bp[36:39] = _t.tensor([0.0,  0.0, -0.4])   # left_collar
     bp[39:42] = _t.tensor([0.0,  0.0,  0.4])   # right_collar
-    # Ombros: ~70° para trazer os braços da horizontal para ao lado do corpo
+    # Shoulders: ~46° to bring arms from horizontal to alongside the body
     bp[45:48] = _t.tensor([0.0,  0.0, -0.8])   # left_shoulder
     bp[48:51] = _t.tensor([0.0,  0.0,  0.8])   # right_shoulder
     return bp
 
 
 # ---------------------------------------------------------------------------
-# Python executável de cada ferramenta
+# Python executable for each tool
 # ---------------------------------------------------------------------------
 def _find_python(venv_dirs: list[Path]) -> str:
-    """Retorna o primeiro python encontrado dentre os venvs candidatos."""
+    """Returns the first python found among the candidate venvs."""
     for venv in venv_dirs:
         candidate = venv / "bin" / "python"
         if candidate.exists():
@@ -149,24 +149,24 @@ SUPPORTED_ROBOTS = [
 def find_videos_in_folder(folder: Path) -> list[Path]:
     videos = sorted(folder.rglob("*.mp4"))
     if not videos:
-        print(f"[AVISO] Nenhum arquivo .mp4 encontrado em: {folder}")
+        print(f"[WARN] No .mp4 files found in: {folder}")
     return videos
 
 
 def _run_genmo_cmd(cmd: list, label: str, output_pt: Path):
-    """Executa um comando GENMO e valida que hmr4d_results.pt foi gerado."""
+    """Runs a GENMO command and validates that hmr4d_results.pt was generated."""
     print("\n" + "=" * 60)
     print(f"[GENMO] {label}")
     print("=" * 60)
-    print("Comando:", " ".join(cmd))
+    print("Command:", " ".join(cmd))
 
     result = subprocess.run(cmd, cwd=str(GENMO_DIR))
     if result.returncode != 0:
-        print(f"[ERRO] GENMO falhou: {label}")
+        print(f"[ERROR] GENMO failed: {label}")
         sys.exit(result.returncode)
 
     if not output_pt.exists():
-        print(f"[ERRO] hmr4d_results.pt não encontrado em: {output_pt}")
+        print(f"[ERROR] hmr4d_results.pt not found at: {output_pt}")
         sys.exit(1)
 
     return output_pt
@@ -174,12 +174,12 @@ def _run_genmo_cmd(cmd: list, label: str, output_pt: Path):
 
 def run_genmo(video_path: Path, video_name: str, output_dir: Path, args) -> Path:
     """
-    Executa o GENMO em modo vídeo e retorna o caminho para hmr4d_results.pt.
+    Runs GENMO in video mode and returns the path to hmr4d_results.pt.
     """
     hmr4d_results = output_dir / "hmr4d_results.pt"
 
     if hmr4d_results.exists() and not args.force:
-        print(f"[GENMO] Pulando vídeo — resultado já existe: {hmr4d_results}")
+        print(f"[GENMO] Skipping video — result already exists: {hmr4d_results}")
         return hmr4d_results
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -199,7 +199,7 @@ def run_genmo(video_path: Path, video_name: str, output_dir: Path, args) -> Path
     if args.pose:
         cmd.append("--pose")
 
-    return _run_genmo_cmd(cmd, f"Processando vídeo: {video_path.name}", hmr4d_results)
+    return _run_genmo_cmd(cmd, f"Processing video: {video_path.name}", hmr4d_results)
 
 
 def smooth_transitions(
@@ -207,27 +207,27 @@ def smooth_transitions(
     t1: int,
     t2: int,
     n_frames: int,
-    neutral_body_pose,  # torch.Tensor (63,) — zeros ou pose customizada
+    neutral_body_pose,  # torch.Tensor (63,) — zeros or custom pose
 ) -> None:
     """
-    Constrói âncoras de stand still antes e depois do núcleo de movimento.
+    Builds stand still anchors before and after the motion core.
 
-    PREFIXO [0 : t1]
-      · transl        = core[0].transl        — robô na posição inicial
-      · global_orient = core[0].global_orient — mesma orientação do início
-      · body_pose     = neutro (zeros/custom), lerp → core[0] nos últimos n_frames
+    PREFIX [0 : t1]
+      · transl        = core[0].transl        — robot at initial position
+      · global_orient = core[0].global_orient — same orientation as start
+      · body_pose     = neutral (zeros/custom), lerp → core[0] over last n_frames
       · betas         = core[0].betas
 
-    SUFIXO [t2 : fim]
-      · transl        = core[-1].transl        — sem teleporte
-      · global_orient = core[-1].global_orient — mesma orientação do fim
-      · body_pose     = lerp core[-1] → neutro nos primeiros n_frames, depois neutro
+    SUFFIX [t2 : end]
+      · transl        = core[-1].transl        — no teleport
+      · global_orient = core[-1].global_orient — same orientation as end
+      · body_pose     = lerp core[-1] → neutral over first n_frames, then neutral
       · betas         = core[-1].betas
     """
     import torch
 
     pred = torch.load(combined_pt, map_location="cpu")
-    nbp  = neutral_body_pose  # alias curto
+    nbp  = neutral_body_pose  # short alias
 
     for section in ("smpl_params_global", "smpl_params_incam"):
         params = pred[section]
@@ -236,21 +236,21 @@ def smooth_transitions(
             x        = params[key].float()
             T        = x.shape[0]
             n_suffix = T - t2
-            c0       = x[t1].clone()       # primeiro frame do núcleo
-            cN       = x[t2 - 1].clone()   # último  frame do núcleo
+            c0       = x[t1].clone()       # first frame of core
+            cN       = x[t2 - 1].clone()   # last  frame of core
 
-            # Valor neutro para este campo
+            # Neutral value for this field
             if key == "body_pose":
                 neutral_pre = nbp.to(x.dtype)
                 neutral_suf = nbp.to(x.dtype)
             elif key == "global_orient":
-                # Yaw do core preservado; pitch/roll zerados → upright na direção certa
+                # Core yaw preserved; pitch/roll zeroed → upright facing correct direction
                 neutral_pre = _extract_yaw_orient(c0).to(x.dtype)
                 neutral_suf = _extract_yaw_orient(cN).to(x.dtype)
             else:
                 neutral_pre = neutral_suf = None  # transl, betas
 
-            # ── PREFIXO ────────────────────────────────────────────────────
+            # ── PREFIX ─────────────────────────────────────────────────────
             if neutral_pre is not None:
                 x[:t1] = neutral_pre.unsqueeze(0).expand(t1, *x.shape[1:])
                 lerp_start = max(0, t1 - n_frames)
@@ -261,7 +261,7 @@ def smooth_transitions(
             else:
                 x[:t1] = c0.unsqueeze(0).expand(t1, *x.shape[1:])
 
-            # ── SUFIXO ─────────────────────────────────────────────────────
+            # ── SUFFIX ─────────────────────────────────────────────────────
             if neutral_suf is not None:
                 for i in range(n_suffix):
                     w = min(1.0, (i + 1) / (n_frames + 1))
@@ -274,21 +274,21 @@ def smooth_transitions(
 
     torch.save(pred, combined_pt)
     print(
-        f"[Smooth] Prefixo: orient/transl=core[0], body_pose neutro + lerp {n_frames}f | "
-        f"Sufixo: orient/transl=core[-1], lerp → neutro {n_frames}f"
+        f"[Smooth] Prefix: orient/transl=core[0], neutral body_pose + lerp {n_frames}f | "
+        f"Suffix: orient/transl=core[-1], lerp → neutral {n_frames}f"
     )
 
 
 def process_video_sandwich(video_path: Path, video_name: str, output_dir: Path, args) -> Path:
     """
-    Executa o pipeline sandwich:
-        Prefixo (stand still) + Núcleo (vídeo) + Sufixo (stand still)
+    Runs the sandwich pipeline:
+        Prefix (stand still) + Core (video) + Suffix (stand still)
 
-    Os frames de âncora são construídos diretamente repetindo o primeiro/último
-    frame do núcleo. smooth_transitions() sobrescreve esses frames com a pose
-    neutra (_make_standing_body_pose) e aplica lerp nas bordas.
+    Anchor frames are built by repeating the first/last frame of the core.
+    smooth_transitions() overwrites those frames with the neutral pose
+    (_make_standing_body_pose) and applies lerp at the edges.
 
-    Retorna o caminho para hmr4d_results.pt combinado.
+    Returns the path to the combined hmr4d_results.pt.
     """
     import torch as _torch
 
@@ -298,22 +298,22 @@ def process_video_sandwich(video_path: Path, video_name: str, output_dir: Path, 
     combined_pt   = output_dir / "hmr4d_results.pt"
 
     print(f"\n{'#' * 60}")
-    print(f"# [Sandwich] Prefixo stand still : {prefix_frames} frames @ {ANCHOR_FPS} fps ({prefix_frames / ANCHOR_FPS:.1f} s)")
-    print(f"# [Sandwich] Núcleo              : {video_path.name}")
-    print(f"# [Sandwich] Sufixo stand still  : {suffix_frames} frames @ {ANCHOR_FPS} fps ({suffix_frames / ANCHOR_FPS:.1f} s)")
+    print(f"# [Sandwich] Stand still prefix : {prefix_frames} frames @ {ANCHOR_FPS} fps ({prefix_frames / ANCHOR_FPS:.1f} s)")
+    print(f"# [Sandwich] Core               : {video_path.name}")
+    print(f"# [Sandwich] Stand still suffix : {suffix_frames} frames @ {ANCHOR_FPS} fps ({suffix_frames / ANCHOR_FPS:.1f} s)")
     print(f"{'#' * 60}")
 
     if combined_pt.exists() and not args.force:
-        print(f"[Sandwich] Resultado já existe: {combined_pt}")
+        print(f"[Sandwich] Result already exists: {combined_pt}")
         return combined_pt
 
-    # Etapa 1 — Núcleo (vídeo → SMPL)
+    # Stage 1 — Core (video → SMPL)
     core_pt = run_genmo(video_path, video_name, core_dir, args)
     core    = _torch.load(core_pt, map_location="cpu")
     core_frames = core["smpl_params_global"]["transl"].shape[0]
 
-    # Etapa 2 — Montar combined repetindo bordas do núcleo como placeholder de âncora.
-    # smooth_transitions() sobrescreve esses frames com a pose neutra + lerp.
+    # Stage 2 — Build combined by repeating core edges as anchor placeholders.
+    # smooth_transitions() will overwrite these frames with neutral pose + lerp.
     combined = {}
     for section in ("smpl_params_global", "smpl_params_incam"):
         combined[section] = {}
@@ -335,9 +335,9 @@ def process_video_sandwich(video_path: Path, video_name: str, output_dir: Path, 
 
     combined_pt.parent.mkdir(parents=True, exist_ok=True)
     _torch.save(combined, combined_pt)
-    print(f"[Sandwich] SMPL montado: {prefix_frames + core_frames + suffix_frames} frames → {combined_pt}")
+    print(f"[Sandwich] SMPL assembled: {prefix_frames + core_frames + suffix_frames} frames → {combined_pt}")
 
-    # Etapa 3 — Pose neutra e suavização das transições
+    # Stage 3 — Neutral pose and transition smoothing
     if args.neutral_pose_path:
         import numpy as _np
         _p = Path(args.neutral_pose_path)
@@ -363,8 +363,8 @@ def process_video_sandwich(video_path: Path, video_name: str, output_dir: Path, 
 
 def run_gmr(hmr4d_results: Path, video_name: str, args):
     """
-    Executa o GMR (gvhmr_to_robot.py) a partir do hmr4d_results.pt.
-    O PKL é salvo em GMR/output/pkl/<robot>_<video_name>.pkl.
+    Runs GMR (gvhmr_to_robot.py) from hmr4d_results.pt.
+    PKL is saved to GMR/output/pkl/<robot>_<video_name>.pkl.
     """
     if args.save_path:
         save_path = Path(args.save_path)
@@ -398,35 +398,35 @@ def run_gmr(hmr4d_results: Path, video_name: str, args):
         if xvfb:
             cmd = [xvfb, "-a", "--server-args=-screen 0 1024x768x24"] + cmd
         else:
-            print("[AVISO] xvfb-run não encontrado. Instale com: sudo apt-get install -y xvfb")
+            print("[WARN] xvfb-run not found. Install with: sudo apt-get install -y xvfb")
 
     print("\n" + "=" * 60)
-    print(f"[GMR] Retargeting para {args.robot}: {video_name}")
+    print(f"[GMR] Retargeting for {args.robot}: {video_name}")
     if args.headless:
-        print("[GMR] Headless (xvfb-run + MUJOCO_GL=egl)" if shutil.which("xvfb-run") else "[GMR] Headless parcial (MUJOCO_GL=egl apenas)")
+        print("[GMR] Headless (xvfb-run + MUJOCO_GL=egl)" if shutil.which("xvfb-run") else "[GMR] Partial headless (MUJOCO_GL=egl only)")
     if args.record_video:
-        print(f"[GMR] Vídeo → {video_save_path}")
+        print(f"[GMR] Video → {video_save_path}")
     print("=" * 60)
 
     result = subprocess.run(cmd, cwd=str(GMR_DIR), env=env)
     if result.returncode != 0:
-        print(f"[ERRO] GMR falhou para: {video_name}")
+        print(f"[ERROR] GMR failed for: {video_name}")
         sys.exit(result.returncode)
 
-    print(f"[GMR] PKL salvo em: {save_path}")
+    print(f"[GMR] PKL saved to: {save_path}")
     return save_path
 
 
 def run_pkl_to_csv(pkl_path: Path, video_name: str, robot: str):
     """
-    Converte um único arquivo .pkl do GMR em CSV e salva em GMR/output/csv/.
+    Converts a single GMR .pkl file to CSV and saves it to GMR/output/csv/.
     """
     GMR_OUTPUT_CSV.mkdir(parents=True, exist_ok=True)
     csv_path = GMR_OUTPUT_CSV / f"{robot}_{video_name}.csv"
 
     print("\n" + "=" * 60)
-    print(f"[CSV] Convertendo PKL → CSV: {pkl_path.name}")
-    print(f"[CSV] Destino: {csv_path}")
+    print(f"[CSV] Converting PKL → CSV: {pkl_path.name}")
+    print(f"[CSV] Destination: {csv_path}")
     print("=" * 60)
 
     import tempfile
@@ -441,22 +441,22 @@ def run_pkl_to_csv(pkl_path: Path, video_name: str, robot: str):
         ]
         result = subprocess.run(cmd, cwd=str(GMR_DIR))
         if result.returncode != 0:
-            print(f"[ERRO] Conversão PKL→CSV falhou para: {pkl_path.name}")
+            print(f"[ERROR] PKL→CSV conversion failed for: {pkl_path.name}")
             return None
 
         generated_csv = Path(tmp_dir) / "csv" / pkl_path.with_suffix(".csv").name
         if generated_csv.exists():
             shutil.move(str(generated_csv), str(csv_path))
-            print(f"[CSV] Salvo em: {csv_path}")
+            print(f"[CSV] Saved to: {csv_path}")
         else:
-            print(f"[AVISO] CSV gerado não encontrado: {generated_csv}")
+            print(f"[WARN] Generated CSV not found: {generated_csv}")
             return None
 
     return csv_path
 
 
 def process_video(video_path: Path, args, video_name: str = None):
-    """Roda a pipeline completa (GENMO + GMR) para um único vídeo."""
+    """Runs the full pipeline (GENMO + GMR) for a single video."""
     video_name = video_name or video_path.stem
 
     if args.output_dir:
@@ -465,24 +465,24 @@ def process_video(video_path: Path, args, video_name: str = None):
         output_dir = GENMO_DIR / "outputs" / "demo" / video_name
 
     print(f"\n{'#' * 60}")
-    print(f"# Vídeo  : {video_path.name}")
+    print(f"# Video    : {video_path.name}")
     if video_name != video_path.stem:
-        print(f"# Nome   : {video_name}")
-    print(f"# Saída  : {output_dir}")
-    print(f"# Robô   : {args.robot}")
-    print(f"# Sandwich: {'ativo' if args.sandwich else 'desativado'}")
+        print(f"# Name     : {video_name}")
+    print(f"# Output   : {output_dir}")
+    print(f"# Robot    : {args.robot}")
+    print(f"# Sandwich : {'active' if args.sandwich else 'disabled'}")
     print(f"{'#' * 60}")
 
-    # Etapa 1 — GENMO: vídeo → SMPL (com ou sem sandwich)
+    # Stage 1 — GENMO: video → SMPL (with or without sandwich)
     if args.sandwich:
         hmr4d_results = process_video_sandwich(video_path, video_name, output_dir, args)
     else:
         hmr4d_results = run_genmo(video_path, video_name, output_dir, args)
 
-    # Etapa 2 — GMR: SMPL → PKL do movimento do robô
+    # Stage 2 — GMR: SMPL → robot motion PKL
     save_path = run_gmr(hmr4d_results, video_name, args)
 
-    # Etapa 3 — Converter PKL → CSV
+    # Stage 3 — Convert PKL → CSV
     run_pkl_to_csv(save_path, video_name, args.robot)
 
     return hmr4d_results, save_path
@@ -494,20 +494,20 @@ def process_video(video_path: Path, args, video_name: str = None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="CopyCat — Pipeline completa: Vídeo → SMPL (GENMO) → Robô (GMR)",
+        description="CopyCat — Full pipeline: Video → SMPL (GENMO) → Robot (GMR)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
 
-    # ── Entrada ──────────────────────────────────────────────────────────────
+    # ── Input ────────────────────────────────────────────────────────────────
     input_group = parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument(
         "--video", "-v",
-        help="Arquivo .mp4 único para processar.",
+        help="Single .mp4 file to process.",
     )
     input_group.add_argument(
         "--videos_path",
-        help="Pasta com vídeos .mp4 (busca recursiva em subpastas). "
+        help="Folder with .mp4 videos (recursive search in subfolders). "
              "Ex: --videos_path fut_do_t1/",
     )
 
@@ -515,48 +515,48 @@ def main():
     parser.add_argument(
         "--video_name",
         default=None,
-        help="Nome usado na pasta de saída (padrão: stem do arquivo de vídeo). "
-             "Ignorado quando --video é uma pasta.",
+        help="Name used in the output folder (default: video file stem). "
+             "Ignored when --video is a folder.",
     )
     parser.add_argument(
         "--output_dir",
         default=None,
-        help="Pasta de saída para os resultados do GENMO "
-             "(padrão: GENMO/outputs/demo/<video_name>).",
+        help="Output folder for GENMO results "
+             "(default: GENMO/outputs/demo/<video_name>).",
     )
     parser.add_argument(
         "--ckpt_path",
         default=str(DEFAULT_CKPT),
-        help=f"Checkpoint do modelo GENMO (padrão: {DEFAULT_CKPT}).",
+        help=f"GENMO model checkpoint (default: {DEFAULT_CKPT}).",
     )
     parser.add_argument(
         "--exp",
         default="genmo_lg",
-        help="Configuração de experimento do GENMO (padrão: genmo_lg).",
+        help="GENMO experiment config (default: genmo_lg).",
     )
     parser.add_argument(
         "--orig_fps",
         type=int,
         default=30,
-        help="FPS original do vídeo de entrada (padrão: 30).",
+        help="Original FPS of the input video (default: 30).",
     )
     parser.add_argument(
         "--static_cam",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Assume câmera estática (padrão: ativo). Use --no-static-cam para SLAM.",
+        help="Assume static camera (default: on). Use --no-static-cam for SLAM.",
     )
     parser.add_argument(
         "--force",
         action="store_true",
         default=False,
-        help="Força reprocessamento mesmo que hmr4d_results.pt já exista.",
+        help="Force reprocessing even if hmr4d_results.pt already exists.",
     )
     parser.add_argument(
         "--pose",
         action="store_true",
         default=False,
-        help="Gera PNGs de debug de pose/YOLO no GENMO (desligado por padrão).",
+        help="Generate pose/YOLO debug PNGs in GENMO (off by default).",
     )
 
     # ── Sandwich (Mixed Conditions) ───────────────────────────────────────────
@@ -564,34 +564,34 @@ def main():
         "--sandwich",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Ativa o modo sandwich: prefixo 'stand still' + vídeo + sufixo 'stand still'. "
-             "Garante transição estável para o T1 (padrão: ativo). "
-             "Use --no-sandwich para desativar.",
+        help="Enable sandwich mode: 'stand still' prefix + video + 'stand still' suffix. "
+             "Ensures stable transition for the T1 (default: on). "
+             "Use --no-sandwich to disable.",
     )
     parser.add_argument(
         "--anchor_frames",
         type=int,
         default=ANCHOR_FRAMES,
-        help=f"Frames de stand still no prefixo (padrão: {ANCHOR_FRAMES} = {ANCHOR_FRAMES / ANCHOR_FPS:.1f} s @ {ANCHOR_FPS} fps).",
+        help=f"Stand still frames in the prefix (default: {ANCHOR_FRAMES} = {ANCHOR_FRAMES / ANCHOR_FPS:.1f} s @ {ANCHOR_FPS} fps).",
     )
     parser.add_argument(
         "--suffix_frames",
         type=int,
         default=SUFFIX_FRAMES,
-        help=f"Frames de stand still no sufixo (padrão: {SUFFIX_FRAMES} = {SUFFIX_FRAMES / ANCHOR_FPS:.1f} s @ {ANCHOR_FPS} fps).",
+        help=f"Stand still frames in the suffix (default: {SUFFIX_FRAMES} = {SUFFIX_FRAMES / ANCHOR_FPS:.1f} s @ {ANCHOR_FPS} fps).",
     )
     parser.add_argument(
         "--neutral_pose_path",
         default=None,
-        help="Arquivo .npy ou .pt com tensor (63,) de body_pose neutra para as âncoras "
-             "(padrão: zeros = SMPL rest pose). Útil para ajustar posição dos braços.",
+        help="A .npy or .pt file with a (63,) body_pose tensor for the anchors "
+             "(default: zeros = SMPL rest pose). Useful for adjusting arm position.",
     )
     parser.add_argument(
         "--transition_frames",
         type=int,
         default=15,
-        help="Frames de suavização em cada borda de transição do sandwich "
-             "(padrão: 15 = 0.5 s a 30 fps). Usa lerp nos parâmetros SMPL.",
+        help="Smoothing frames at each sandwich transition edge "
+             "(default: 15 = 0.5 s at 30 fps). Uses lerp on SMPL parameters.",
     )
 
     # ── GMR ──────────────────────────────────────────────────────────────────
@@ -599,67 +599,67 @@ def main():
         "--robot", "-r",
         choices=SUPPORTED_ROBOTS,
         default="unitree_g1",
-        help="Robô-alvo para o retargeting (padrão: unitree_g1).",
+        help="Target robot for retargeting (default: unitree_g1).",
     )
     parser.add_argument(
         "--save_path",
         default=None,
-        help="Caminho para salvar o movimento do robô (.pkl). "
-             "Padrão: GMR/output/pkl/<robot>_<video_name>.pkl",
+        help="Path to save the robot motion (.pkl). "
+             "Default: GMR/output/pkl/<robot>_<video_name>.pkl",
     )
     parser.add_argument(
         "--record_video",
         action="store_true",
         default=False,
-        help="Grava um vídeo da visualização do GMR.",
+        help="Record a video of the GMR visualization.",
     )
     parser.add_argument(
         "--rate_limit",
         action="store_true",
         default=False,
-        help="Limita a taxa de reprodução ao FPS do movimento humano.",
+        help="Limit playback rate to the human motion FPS.",
     )
     parser.add_argument(
         "--loop",
         action="store_true",
         default=False,
-        help="Repete o movimento no viewer indefinidamente.",
+        help="Loop the motion in the viewer indefinitely.",
     )
     parser.add_argument(
         "--headless",
         action="store_true",
         default=False,
-        help="Roda o GMR/MuJoCo em modo headless (sem abrir janela). "
-             "Define MUJOCO_GL=egl. Útil para SSH ou servidores sem display.",
+        help="Run GMR/MuJoCo in headless mode (no window). "
+             "Sets MUJOCO_GL=egl. Useful for SSH or display-less servers.",
     )
 
     args = parser.parse_args()
 
-    # ── Validações básicas ────────────────────────────────────────────────────
+    # ── Basic validation ──────────────────────────────────────────────────────
     if not GENMO_SCRIPT.exists():
-        print(f"[ERRO] Script GENMO não encontrado: {GENMO_SCRIPT}")
+        print(f"[ERROR] GENMO script not found: {GENMO_SCRIPT}")
         sys.exit(1)
     if not GMR_SCRIPT.exists():
-        print(f"[ERRO] Script GMR não encontrado: {GMR_SCRIPT}")
+        print(f"[ERROR] GMR script not found: {GMR_SCRIPT}")
         sys.exit(1)
 
     print(f"[Config] GENMO Python : {GENMO_PYTHON}")
     print(f"[Config] GMR   Python : {GMR_PYTHON}")
     if args.sandwich:
-        print(f"[Config] Sandwich     : ativo")
-        print(f"[Config] Prefixo      : {args.anchor_frames} frames ({args.anchor_frames / ANCHOR_FPS:.1f} s @ {ANCHOR_FPS} fps)")
-        print(f"[Config] Sufixo       : {args.suffix_frames} frames ({args.suffix_frames / ANCHOR_FPS:.1f} s @ {ANCHOR_FPS} fps)")
+        print(f"[Config] Sandwich     : active")
+        print(f"[Config] Prefix       : {args.anchor_frames} frames ({args.anchor_frames / ANCHOR_FPS:.1f} s @ {ANCHOR_FPS} fps)")
+        print(f"[Config] Suffix       : {args.suffix_frames} frames ({args.suffix_frames / ANCHOR_FPS:.1f} s @ {ANCHOR_FPS} fps)")
 
-    # ── Modo pasta (--videos_path) ────────────────────────────────────────────
+    # ── Folder mode (--videos_path) ───────────────────────────────────────────
     if args.videos_path:
         folder = Path(args.videos_path).resolve()
         if not folder.is_dir():
-            print(f"[ERRO] Pasta não encontrada: {folder}")
+            print(f"[ERROR] Folder not found: {folder}")
             sys.exit(1)
         videos = find_videos_in_folder(folder)
         if not videos:
             sys.exit(1)
-        print(f"[INFO] {len(videos)} vídeo(s) encontrado(s) em: {folder}")
+        print(f"[INFO] {len(videos)} video(s) found in: {folder}")
 
         results = []
         for i, vp in enumerate(videos, 1):
@@ -668,26 +668,26 @@ def main():
                 _, save = process_video(vp, args)
                 results.append((vp, save, None))
             except SystemExit as e:
-                print(f"[AVISO] Pulando {vp.name} (erro {e.code})")
+                print(f"[WARN] Skipping {vp.name} (error {e.code})")
                 results.append((vp, None, e.code))
 
         print("\n" + "=" * 60)
-        print(f"[CONCLUÍDO] {len(videos)} vídeo(s) processado(s).")
+        print(f"[DONE] {len(videos)} video(s) processed.")
         for vp, save, err in results:
-            print(f"  {vp.name} → {str(save) if save else f'ERRO ({err})'}")
+            print(f"  {vp.name} → {str(save) if save else f'ERROR ({err})'}")
         return
 
-    # ── Modo arquivo único (--video) ──────────────────────────────────────────
+    # ── Single file mode (--video) ────────────────────────────────────────────
     video_input = Path(args.video).resolve()
     if not video_input.exists():
-        print(f"[ERRO] Caminho não encontrado: {video_input}")
+        print(f"[ERROR] Path not found: {video_input}")
         sys.exit(1)
     if video_input.suffix.lower() != ".mp4":
-        print(f"[AVISO] O arquivo não é .mp4: {video_input}")
+        print(f"[WARN] File is not .mp4: {video_input}")
 
     process_video(video_input, args, video_name=args.video_name)
 
-    print("\n[CONCLUÍDO] Pipeline finalizada.")
+    print("\n[DONE] Pipeline finished.")
 
 
 if __name__ == "__main__":
