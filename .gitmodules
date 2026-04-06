@@ -10,7 +10,7 @@
 
 [submodule "deploy/motion_tracking_controller"]
 	path = deploy/motion_tracking_controller
-	url = https://github.com/AKCIT-RL/motion_tracking_controller
+	url = https://github.com/AKCIT-RL/motion_tracking_controller.git
 
 [submodule "deploy/booster_deploy"]
 	path = deploy/booster_deploy
