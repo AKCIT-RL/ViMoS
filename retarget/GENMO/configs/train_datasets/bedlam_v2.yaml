@@ -1,2 +1,0 @@
-bedlam_v2:
-  _target_: genmo.datasets.bedlam.bedlam.BedlamDatasetV2

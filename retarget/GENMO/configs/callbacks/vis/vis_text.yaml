@@ -1,2 +1,0 @@
-vis_text:
-  _target_: genmo.callbacks.vis.vis_text.VisText

@@ -1,2 +1,0 @@
-metric_3dpw:
-  _target_: genmo.callbacks.metric.metric_3dpw.MetricMocap
