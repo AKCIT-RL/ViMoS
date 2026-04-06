@@ -1,15 +1,22 @@
-[submodule "GMR"]
-    path = GMR
-    url = https://github.com/AKCIT-RL/GMR.git
-    branch = dev/pettro
+[submodule "retarget/GMR"]
+	path = retarget/GMR
+	url = https://github.com/AKCIT-RL/GMR.git
+	branch = feature/docker
 
-[submodule "GENMO"]
-	path = GENMO
+[submodule "retarget/GENMO"]
+	path = retarget/GENMO
 	url = https://github.com/AKCIT-RL/GENMO.git
-	branch = dev/pettro
-[submodule "motion_tracking_controller"]
-	path = motion_tracking_controller
+	branch = feature/docker
+
+[submodule "deploy/motion_tracking_controller"]
+	path = deploy/motion_tracking_controller
 	url = https://github.com/AKCIT-RL/motion_tracking_controller
-[submodule "whole_body_tracking"]
-	path = whole_body_tracking
+
+[submodule "deploy/booster_deploy"]
+	path = deploy/booster_deploy
+	url = https://github.com/AKCIT-RL/booster_deploy
+	branch = dev/pettro
+
+[submodule "train/whole_body_tracking"]
+	path = train/whole_body_tracking
 	url = https://github.com/AKCIT-RL/whole_body_tracking

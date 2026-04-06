@@ -1,0 +1,25 @@
+# Ambiente virtual
+.venv/
+
+# Dados gerados e assets grandes (montados como volumes em runtime)
+output/
+videos/
+assets/
+
+# Arquivos Python compilados
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# Build artifacts
+**/*.egg-info/
+**/dist/
+**/build/
+
+# Git
+.git/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
