@@ -37,8 +37,8 @@ Video (.mp4)
 ```
 DYSNM/
 ├── scripts/
-│   ├── run_pipeline_refpose.py   ← main pipeline (venv, sandwich mode)
-│   └── run_pipeline_docker.py   ← pipeline via Docker
+│   ├── video_to_robot.py   ← main pipeline (venv)
+│   └── video_to_robot_docker.py   ← pipeline via Docker
 ├── retarget/
 │   ├── GENMO/                   ← video → SMPL-X (submodule)
 │   └── GMR/                     ← SMPL-X → robot motion (submodule)
@@ -98,19 +98,19 @@ docker compose --profile mtc build  # + motion_tracking_controller (ROS 2)
 
 ```bash
 # Single video
-python scripts/run_pipeline_docker.py --video /path/to/video.mp4 --robot booster_t1
+python scripts/video_to_robot_docker.py --video /path/to/video.mp4 --robot booster_t1
 
 # Folder of videos
-python scripts/run_pipeline_docker.py --videos_path /path/to/folder/ --robot unitree_g1
+python scripts/video_to_robot_docker.py --videos_path /path/to/folder/ --robot unitree_g1
 
 # With visualization video and headless mode (no display, for SSH)
-python scripts/run_pipeline_docker.py --video video.mp4 --robot booster_t1 --record_video --headless
+python scripts/video_to_robot_docker.py --video video.mp4 --robot booster_t1 --record_video --headless
 ```
 
 ### With venv (manual)
 
 ```bash
-python scripts/run_pipeline_refpose.py --video /path/to/video.mp4 --robot booster_t1
+python scripts/video_to_robot.py --video /path/to/video.mp4 --robot booster_t1
 ```
 
 Activate the GENMO venv (`retarget/GENMO/.venv`) before running. The script manages both internally via `GENMO_PYTHON` and `GMR_PYTHON`.
@@ -132,7 +132,7 @@ This gives the policy a clear signal for what a safe start and end look like.
 
 To enable:
 ```bash
-python scripts/run_pipeline_refpose.py --video video.mp4 --robot booster_t1 --sandwich
+python scripts/video_to_robot.py --video video.mp4 --robot booster_t1 --sandwich
 ```
 
 ### Outputs
