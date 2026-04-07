@@ -31,9 +31,9 @@ from pathlib import Path
 # ─────────────────────────────────────────────────────────────────────────────
 # Host paths
 # ─────────────────────────────────────────────────────────────────────────────
-COPYCAT_DIR = Path(__file__).resolve().parent
-GENMO_DIR   = COPYCAT_DIR / "GENMO"
-GMR_DIR     = COPYCAT_DIR / "GMR"
+COPYCAT_DIR = Path(__file__).resolve().parent.parent
+GENMO_DIR   = COPYCAT_DIR / "retarget" / "GENMO"
+GMR_DIR     = COPYCAT_DIR / "retarget" / "GMR"
 
 # Host mount points (mirrors of volumes in docker-compose.yml)
 GENMO_OUTPUTS_HOST = GENMO_DIR / "outputs"
@@ -436,8 +436,9 @@ def main():
                         help="Generate pose/YOLO debug PNGs.")
 
     # ── Sandwich ──────────────────────────────────────────────────────────────
-    parser.add_argument("--sandwich", action=argparse.BooleanOptionalAction, default=True,
-                        help="Sandwich mode: stand-still + video + stand-still (default: enabled).")
+    parser.add_argument("--sandwich", action=argparse.BooleanOptionalAction, default=False,
+                        help="Sandwich mode: stand-still + video + stand-still (default: disabled). "
+                             "Use for videos that start/end abruptly in poses the robot cannot safely hold.")
     parser.add_argument("--anchor_frames", type=int, default=ANCHOR_FRAMES,
                         help=f"Stand-still frames at the prefix (default: {ANCHOR_FRAMES}).")
     parser.add_argument("--suffix_frames", type=int, default=SUFFIX_FRAMES,

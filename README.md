@@ -115,17 +115,24 @@ python scripts/run_pipeline_refpose.py --video /path/to/video.mp4 --robot booste
 
 Activate the GENMO venv (`retarget/GENMO/.venv`) before running. The script manages both internally via `GENMO_PYTHON` and `GMR_PYTHON`.
 
-### Sandwich mode (default: enabled)
+### Sandwich mode (default: disabled)
 
-Prepends and appends a "stand still" anchor pose to the motion, creating a stable start/end for policy training:
+Some videos start or end abruptly — mid-motion, mid-kick, or in an unstable pose. When the robot trains on this reference as-is, it may learn to not maintain balance in the final pose, since the reference itself never shows a stable recovery.
+
+Sandwich mode wraps the motion with "stand still" anchor frames at both ends:
 
 ```
 [30 frames stand still] + [motion from video] + [60 frames stand still]
 ```
 
-To disable:
+This gives the policy a clear signal for what a safe start and end look like.
+
+**Use it when:** the video starts/ends in a pose the robot cannot safely hold (e.g. mid-kick, leaning, one foot up).  
+**Skip it when:** the video already starts and ends with the robot standing still.
+
+To enable:
 ```bash
-python scripts/run_pipeline_refpose.py --video video.mp4 --robot booster_t1 --no-sandwich
+python scripts/run_pipeline_refpose.py --video video.mp4 --robot booster_t1 --sandwich
 ```
 
 ### Outputs

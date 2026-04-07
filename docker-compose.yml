@@ -23,18 +23,18 @@ services:
   # ── GENMO: video → SMPL-X (requires GPU) ────────────────────────────────────
   genmo:
     build:
-      context: ./GENMO
+      context: ./retarget/GENMO
       dockerfile: Dockerfile
     image: copycat-genmo:latest
     working_dir: /app
 
     volumes:
       # GENMO checkpoints and other inputs (read-only)
-      - ./GENMO/inputs:/app/inputs:ro
+      - ./retarget/GENMO/inputs:/app/inputs:ro
       # GENMO outputs — shared with the gmr service
-      - ./GENMO/outputs:/app/outputs
+      - ./retarget/GENMO/outputs:/app/outputs
       # HuggingFace model cache — persisted on the host to avoid re-downloading
-      - ./GENMO/hf_cache:/hf_cache
+      - ./retarget/GENMO/hf_cache:/hf_cache
 
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
@@ -65,20 +65,20 @@ services:
   # ── GMR: SMPL-X → robot motion (headless via EGL) ───────────────────────────
   gmr:
     build:
-      context: ./GMR
+      context: ./retarget/GMR
       dockerfile: Dockerfile
     image: copycat-gmr:latest
     working_dir: /app
 
     volumes:
       # Robot assets and SMPL-X body models (read-only)
-      - ./GMR/assets:/app/assets:ro
+      - ./retarget/GMR/assets:/app/assets:ro
       # PKL and CSV outputs
-      - ./GMR/output:/app/output
+      - ./retarget/GMR/output:/app/output
       # Visualization videos (optional)
-      - ./GMR/videos:/app/videos
+      - ./retarget/GMR/videos:/app/videos
       # GENMO outputs read by GMR (read-only)
-      - ./GENMO/outputs:/genmo_outputs:ro
+      - ./retarget/GENMO/outputs:/genmo_outputs:ro
 
     environment:
       # Offscreen EGL with GPU — no GLFW, no display required

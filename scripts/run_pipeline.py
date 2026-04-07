@@ -19,9 +19,9 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Paths relative to CopyCat root
 # ---------------------------------------------------------------------------
-COPYCAT_DIR = Path(__file__).resolve().parent
-GENMO_DIR   = COPYCAT_DIR / "GENMO"
-GMR_DIR     = COPYCAT_DIR / "GMR"
+COPYCAT_DIR = Path(__file__).resolve().parent.parent
+GENMO_DIR   = COPYCAT_DIR / "retarget" / "GENMO"
+GMR_DIR     = COPYCAT_DIR / "retarget" / "GMR"
 
 GENMO_SCRIPT = GENMO_DIR / "scripts" / "demo" / "demo_text.py"
 GMR_SCRIPT        = GMR_DIR / "scripts" / "gvhmr_to_robot.py"

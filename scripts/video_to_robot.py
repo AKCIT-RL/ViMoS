@@ -23,8 +23,8 @@ from pathlib import Path
 # Paths relative to CopyCat root
 # ---------------------------------------------------------------------------
 COPYCAT_DIR = Path(__file__).resolve().parent.parent
-GENMO_DIR   = COPYCAT_DIR / "GENMO"
-GMR_DIR     = COPYCAT_DIR / "GMR"
+GENMO_DIR   = COPYCAT_DIR / "retarget" / "GENMO"
+GMR_DIR     = COPYCAT_DIR / "retarget" / "GMR"
 
 GENMO_SCRIPT      = GENMO_DIR / "scripts" / "demo" / "demo_text.py"
 GMR_SCRIPT        = GMR_DIR / "scripts" / "gvhmr_to_robot.py"
@@ -563,10 +563,10 @@ def main():
     parser.add_argument(
         "--sandwich",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=False,
         help="Enable sandwich mode: 'stand still' prefix + video + 'stand still' suffix. "
-             "Ensures stable transition for the T1 (default: on). "
-             "Use --no-sandwich to disable.",
+             "Use for videos that start/end abruptly in poses the robot cannot safely hold. "
+             "Disabled by default. Enable with --sandwich.",
     )
     parser.add_argument(
         "--anchor_frames",
