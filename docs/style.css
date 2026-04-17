@@ -1,0 +1,225 @@
+html {
+    text-rendering: optimizeLegibility;
+}
+
+@font-face {
+    font-family: 'googlesans-bold';
+    src: url('fonts/google-sans/GoogleSans-Bold.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'googlesans-italic';
+    src: url('fonts/google-sans/GoogleSans-Italic.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'googlesans-regular';
+    src: url('fonts/google-sans/GoogleSans-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'noto-sans-bold';
+    src: url('fonts/noto-sans/NotoSans-Bold.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'noto-sans-italic';
+    src: url('fonts/noto-sans/NotoSans-Italic.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'noto-sans-regular';
+    src: url('fonts/noto-sans/NotoSans-Regular.ttf') format('truetype');
+}
+
+body {
+    font-family: 'noto-sans-regular', sans-serif;
+    background-color: white;
+}
+
+h1 {    
+    font-family: 'googlesans-regular', sans-serif;
+    font-size: 3em;
+    color: #363636;
+    text-align: center;
+    margin-bottom: 1.5em;
+    word-break: break-word;
+    margin: 0;
+    padding: 0;
+    box-sizing: inherit;
+    padding-top: 4rem;
+}
+
+h2 {
+    font-family: 'noto-sans-regular', sans-serif;
+    font-size: 2em;
+    color: #363636;
+    text-align: center;
+}
+
+h3 {
+    font-family: 'googlesans-regular', sans-serif;
+    font-size: 1.25em;
+    color: #4a4a4a;
+    text-align: center;
+}
+
+h4 {
+    font-family: 'googlesans-regular', sans-serif;
+    font-size: 1em;
+    color: #4a4a4a;
+    text-align: center;
+    margin: 0.5em 0;
+}
+
+h5 {
+    font-family: 'noto-sans-regular', sans-serif;
+    font-size: 2em;
+    color: #363636;
+    text-align: left;
+    margin: 0;
+}
+
+h6 {
+    font-family: 'noto-sans-regular', sans-serif;
+    font-size: 1.5em;
+    color: #363636;
+    text-align: left;
+    margin: 0;
+    padding-top: 0.75em;
+    padding-bottom: 0.25em;
+}
+
+.no-underline {
+  text-decoration: none;
+  color: hsl(204, 86%, 53%);
+}
+
+.section {
+    padding: 3rem 1.5rem;
+    display: block;
+    box-sizing: inherit;
+    flex-grow: 1;
+    flex-shrink: 0;
+    padding-top: 0;
+}
+
+.content {
+    font-family: 'noto-sans-regular', sans-serif;
+    font-size: 1em;
+    color:#4a4a4a;
+    text-align: justify;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 2em;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.button {
+    padding: 0.5em 1.25em;
+    margin: 0;
+    border-radius: 30px;
+    cursor: pointer;
+    background-color: #2f2f2f;
+    border-color: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.button-text {
+    text-decoration: none;
+    font-family: 'googlesans-regular', sans-serif;
+    font-size: 1em;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+}
+
+.button-icon {
+    width: 1.5em;
+    height: 1.5em;
+    display: inline-block;
+}
+
+.abstract {
+    font-family: 'noto-sans-regular', sans-serif;
+    font-size: 1em;
+    color:#4a4a4a;
+    text-align: justify;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.footer {
+    background-color: #fafafa;
+    padding: 3rem 1.5rem 4rem;
+    text-align: center;
+}
+
+.footer-content {
+    font-family: 'noto-sans-regular', sans-serif;
+    font-size: 1em;
+    color:#4a4a4a;
+    text-align: left;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.no-underline-ft {
+    text-decoration: none;
+    color: #ff6093;
+}
+
+.youtube-video {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 2em;
+}
+
+.image {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border: none;
+    margin: 1em 0;
+}
+
+.related-links-container {
+    margin: 2em 0;
+}
+
+.related-links {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 0.5em;
+    padding: 1em 0;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    border-bottom: 1px solid #f2f2f2;
+}
+
+.related-links p {
+    margin: 0;
+}
+
+.related-links h3 {
+    margin-bottom: 0.5em;
+    margin-top: 0;
+}

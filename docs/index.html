@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="description" content="ViMoS: Democratizing Humanoid Motion Imitation without MoCap. An open-source, end-to-end pipeline from monocular video to deployable robot control policy.">
+        <meta name="keywords" content="Humanoid Robotics, Motion Imitation, Reinforcement Learning, Isaac Lab, BeyondMimic, GENMO, GMR, RoboCup">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>ViMoS — Democratizing Humanoid Motion Imitation without MoCap</title>
+        <link rel="stylesheet" href="style.css">
+        <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
+    </head>
+    <body>
+        <!-- ===== HEADER: Title + Authors ===== -->
+        <div class="section">
+            <div class="content">
+                <h1>ViMoS: Democratizing Humanoid Motion Imitation without MoCap</h1>
+                <h3>
+                    <!-- TODO: replace with real author names and profile links -->
+                    <a href="https://github.com/AKCIT-RL" class="no-underline" target="_blank">Author 1</a><sup>1*†#</sup>,
+                    <a href="https://github.com/AKCIT-RL" class="no-underline" target="_blank">Author 2</a><sup>1*†#</sup>,
+                    <a href="https://github.com/AKCIT-RL" class="no-underline" target="_blank">Author 3</a><sup>2*†#</sup>,
+                    <a href="https://github.com/AKCIT-RL" class="no-underline" target="_blank">Author 4</a><sup>4*†#</sup>
+                </h3>
+                <h4><sup>1</sup>Institute of Physics, Federal University of Goiás, Goiânia, Brazil</h4>
+                <h4><sup>2</sup>Institute of Informatics, Federal University of Goiás, Goiânia, Brazil</h4>
+                <h4><sup>3</sup>School of Electrical, Mechanical and Computer Engineering, Federal University of Goiás, Goiânia, Brazil</h4>
+                <h4><sup>4</sup>Division of Electrical and Computer Engineering, Technological Institute of Aeronautics, São José dos Campos, Brazil</h4>
+                <h4><sup>*</sup>Alphabetical order, equal contribution</h4>
+                <h4><sup>†</sup>AKCIT: Advanced Knowledge Center for Immersive Technologies</h4>
+                <h4><sup>#</sup>CEIA: Center of Excellence in Artificial Intelligence</h4>
+                <div class="links">
+                    <!-- TODO: replace href with real PDF path when available -->
+                    <div class="button">
+                        <a href="paper.pdf" class="button-text" target="_blank"><img src="images/pdf.svg" class="button-icon">Paper</a>
+                    </div>
+                    <!-- TODO: replace href with real arXiv link when available -->
+                    <div class="button">
+                        <a href="https://arxiv.org/" class="button-text" target="_blank"><img src="images/arxiv.svg" class="button-icon">arXiv</a>
+                    </div>
+                    <!-- TODO: replace href with real YouTube link when available -->
+                    <div class="button">
+                        <a href="https://www.youtube.com/" class="button-text" target="_blank"><img src="images/youtube.svg" class="button-icon">YouTube</a>
+                    </div>
+                    <div class="button">
+                        <a href="https://github.com/AKCIT-RL/DYSNM" class="button-text" target="_blank"><img src="images/github.svg" class="button-icon">Code</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== ABSTRACT ===== -->
+        <div class="section">
+            <div class="abstract">
+                <h2>Abstract</h2>
+                <p>
+                    Teaching humanoid robots expressive, athletic behaviors has historically required expensive Motion Capture (MoCap) infrastructure — placing this capability out of reach for most academic and competition teams. This paper presents <strong>ViMoS</strong>, an open-source, end-to-end pipeline that transforms a single monocular video into a deployable robot control policy using only a consumer-grade GPU (tested on an NVIDIA RTX 4090).
+                </p>
+                <p>
+                    By integrating GENMO for generative motion estimation, GMR for kinematic retargeting, and BeyondMimic for reinforcement learning inside NVIDIA Isaac Lab, ViMoS enables teams to deploy whole-body behaviors onto physical humanoids such as the Unitree G1 and Booster T1. We validate the pipeline by successfully training and transferring four qualitatively distinct motion skills. A fully containerized Docker workflow minimizes setup friction to under 30 minutes, making expressive humanoid motion accessible to the broader RoboCup community.
+                </p>
+                <!-- TODO: replace with the real YouTube embed URL when available -->
+                <iframe
+                    class="youtube-video"
+                    src="https://www.youtube.com/embed/placeholder"
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </div>
+
+        <!-- ===== INTRODUCTION ===== -->
+        <div class="section">
+            <div class="content">
+                <h5>Introduction</h5>
+                <p>
+                    Expressive whole-body motion is a cornerstone of humanoid robotics, yet creating new behaviors remains prohibitively expensive and technically demanding. High-fidelity motion data traditionally relies on Motion Capture (MoCap) systems, which carry hardware costs in the tens of thousands of dollars and require calibrated laboratory environments — infrastructure unavailable to most academic and competition teams.
+                </p>
+                <p>
+                    Beyond hardware, a significant software fragmentation barrier exists. Tools for video-based pose estimation, kinematic retargeting, and physics-based policy learning often reside in isolated repositories with incompatible dependencies. Integrating these into a functional pipeline typically requires weeks of engineering effort, a process often lost between competition cycles.
+                </p>
+                <p>
+                    ViMoS addresses both barriers with a unified, containerized pipeline. No MoCap hardware is required — a single monocular smartphone video is sufficient. By integrating <strong>GENMO</strong>, <strong>GMR</strong>, and <strong>BeyondMimic</strong> within Isaac Lab, ViMoS provides a documented, end-to-end tool deployable with a single Docker command. Validated on a consumer GPU (NVIDIA RTX 4090) with peak VRAM under 12 GB, ViMoS enables the rapid creation of diverse skills — including dancing, handshaking, and running — fostering an agile research environment for the RoboCup community.
+                </p>
+            </div>
+        </div>
+
+        <!-- ===== PIPELINE ===== -->
+        <div class="section">
+            <div class="content">
+                <h5>Pipeline Architecture</h5>
+                <p>
+                    The ViMoS pipeline is composed of four specialized frameworks that bridge the gap from visual perception to physical execution. Each module addresses a specific challenge of the embodiment transfer process: from raw video to hardware-ready control policies.
+                </p>
+
+                <!-- TODO: add pipeline diagram here when available (diagram.png from paper) -->
+                <!-- <img class="image" src="images/diagram.png" alt="The ViMoS end-to-end pipeline"> -->
+
+                <h6>Stage 1 — GENMO: Generative Human Motion Estimation</h6>
+                <p>
+                    The first stage employs <strong>GENMO</strong> (Generalist Model for Human Motion), a diffusion-based framework designed for robust pose estimation from monocular video. Unlike traditional regressive models, GENMO utilizes an <em>Asymmetric Diffusion Transformer</em> (AsymmDiT) architecture with 16 layers of RoPE-based Transformer blocks.
+                </p>
+                <p>
+                    Its primary innovation lies in <strong>Dual-Mode Training</strong>: an <em>Estimation Mode</em> that uses Maximum Likelihood Estimation (MLE) to produce precise SMPL-X parameters even under heavy occlusion, and a <em>Global Trajectory Recovery</em> mode that estimates global root velocities and camera poses — allowing the system to extract clean motion data from dynamic, handheld footage without fixed MoCap setups.
+                </p>
+
+                <h6>Stage 2 — GMR: General Motion Retargeting</h6>
+                <p>
+                    Once the human motion is extracted, <strong>GMR</strong> performs the kinematic mapping to the robot's specific topology. Retargeting is often plagued by foot sliding and self-collisions due to differing limb proportions. GMR resolves this through a two-stage process:
+                </p>
+                <p>
+                    First, <em>Non-Uniform Local Scaling</em> dynamically adjusts the human reference to match the specific segment lengths of robots like the Unitree G1 or Booster T1. Second, <em>Optimized Differential IK</em> uses the Mink solver to minimize the error between human key-points and robot end-effectors while strictly enforcing joint limits. Supports 18+ humanoid platforms out of the box.
+                </p>
+
+                <h6>Stage 3 — BeyondMimic: Policy Learning in Isaac Lab</h6>
+                <p>
+                    The control policy is trained with <strong>BeyondMimic</strong> inside NVIDIA's <strong>Isaac Lab</strong> simulation, leveraging GPU-parallelized Reinforcement Learning.
+                    <em>Adaptive Sampling</em> via within-motion failure-aware bin resampling identifies frames where the robot frequently loses balance and increases their sampling frequency during training, significantly accelerating convergence for agile tasks like kicks or spins.
+                    A compact tracking reward combines local joint imitation with world-frame global constraints, reducing long-term drift in locomotion tasks.
+                    The same reward formulation works for any motion without parameter tuning.
+                </p>
+
+                <h6>Stage 4 — Deployment: ROS 2 and TorchScript</h6>
+                <p>
+                    For the <strong>Unitree G1</strong>, ViMoS exports policies in <strong>ONNX</strong> format and integrates them into a <strong>ROS 2 Jazzy</strong> controller node.
+                    For the <strong>Booster T1</strong>, the framework uses <strong>TorchScript JIT</strong> for high-frequency low-level control at up to 200 Hz.
+                    This dual-export capability ensures ViMoS is a generalist tool, capable of powering various humanoid platforms through a unified software interface.
+                </p>
+            </div>
+        </div>
+
+        <!-- ===== EXPERIMENTS ===== -->
+        <div class="section">
+            <div class="content">
+                <h5>Experiments</h5>
+                <p>
+                    To demonstrate that ViMoS generalizes across qualitatively different motion types, we trained and evaluated four distinct skills:
+                    <!-- TODO: list the four skills here when available -->
+                    [TODO — list the four validated skills].
+                </p>
+                <p>
+                    <!-- TODO: add training reward plots (Booster T1 and Unitree G1) when available -->
+                    <!-- <img class="image" src="images/rewards_t1.png" alt="Training rewards — Booster T1"> -->
+                    <!-- <img class="image" src="images/rewards_g1.png" alt="Training rewards — Unitree G1"> -->
+                    All tasks achieve comparable reward curves; differences reflect motion duration rather than task difficulty. Peak GPU memory consumption during training did not exceed 12 GB, confirming that the pipeline is viable on a single high-end consumer GPU. Deployment videos for all four skills are available on the project website.
+                </p>
+            </div>
+        </div>
+
+        <!-- ===== CONCLUSION ===== -->
+        <div class="section">
+            <div class="content">
+                <h5>Conclusion</h5>
+                <p>
+                    ViMoS lowers three compounding barriers — cost, fragmentation, and hardware uncertainty — that currently prevent most teams from developing expressive humanoid behaviors. By unifying GENMO, GMR, and BeyondMimic into a single containerized workflow and validating it on consumer hardware across four qualitatively distinct motion skills (two dances, a handshake, and a running gait), we demonstrate that high-quality motion imitation is no longer the exclusive domain of well-resourced labs.
+                </p>
+                <p>
+                    We release ViMoS as a fully open-source tool and invite the RoboCup community to extend and build upon it.
+                </p>
+            </div>
+        </div>
+
+        <!-- ===== RELATED WORK ===== -->
+        <div class="section">
+            <div class="content">
+                <h5>Related Work</h5>
+                <p>
+                    ViMoS integrates four open-source components. Please refer to each project for credits, licenses, and upstream documentation.
+                </p>
+                <div class="related-links-container">
+                    <div class="related-links">
+                        <h3><a href="https://arxiv.org/abs/2508.08241" class="no-underline" target="_blank">BeyondMimic</a></h3>
+                        <p>PPO-based whole-body motion tracking in Isaac Lab with adaptive sampling and anchor-frame rewards. Used in Stage 3 (policy training).</p>
+                        <p>Liao et al. (2025)</p>
+                    </div>
+                    <div class="related-links">
+                        <h3><a href="https://arxiv.org/abs/2505.01425" class="no-underline" target="_blank">GENMO</a></h3>
+                        <p>A Generalist Model for Human Motion: diffusion-based SMPL-X estimation from monocular video with dual-mode training. Used in Stage 1.</p>
+                        <p>Li, Cao, Zhang, Rempe, Kautz, Iqbal, Yuan — IEEE/CVF ICCV (2025)</p>
+                    </div>
+                    <div class="related-links">
+                        <h3><a href="https://arxiv.org/abs/2510.02252" class="no-underline" target="_blank">GMR — General Motion Retargeting</a></h3>
+                        <p>Universal SMPL-X to robot motion retargeting via non-uniform local scaling and optimized differential IK. Supports 18+ humanoid platforms. Used in Stage 2.</p>
+                        <p>Araujo, Ze, Xu, Wu, Liu (2025)</p>
+                    </div>
+                    <div class="related-links">
+                        <h3><a href="https://arxiv.org/abs/2511.04831" class="no-underline" target="_blank">Isaac Lab</a></h3>
+                        <p>GPU-accelerated simulation framework for multi-modal robot learning. Provides the RL training environment for Stage 3.</p>
+                        <p>Mittal et al. (2025)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer start - do not remove the attribution lines below, it is required for the free use of the template -->
+        <!-- You can edit the content above, but please keep the attribution to the template developer and the requirement to link back to the GINGA paper page -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>© 2026 ViMoS: Democratizing Humanoid Motion Imitation without MoCap. All rights reserved.</p>
+                <p>Website template by <a href="https://github.com/lavinia-rl" target="_blank" class="no-underline-ft">Lavínia R. Lima</a> from <a href="https://github.com/AKCIT-RL" target="_blank" class="no-underline-ft">AKCIT</a>.</p>
+                <p>Free to use with mandatory attribution: please <a href="https://akcit-rl.github.io/DYSNM/" class="no-underline-ft" target="_blank">link</a> back to this page.</p>
+            </div>
+        </footer>
+        <!-- Footer end -->
+    </body>
+</html>

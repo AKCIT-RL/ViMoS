@@ -1,5 +1,7 @@
 # DYSNM — Do You Still Need Mocap?
 
+**[[Project Website]](https://akcit-rl.github.io/DYSNM/)** | **[[Paper]](https://arxiv.org/abs/)** <!-- TODO: update arXiv link -->
+
 **DYSNM** is an end-to-end pipeline for humanoid robot motion imitation — from raw video to deployed policy on a real robot. It chains four stages: **video → SMPL pose (GENMO) → robot motion (GMR) → policy training (BeyondMimic) → deploy**.
 
 Supports **Booster T1** and **Unitree G1** (and 15+ other humanoids via GMR).
