@@ -193,8 +193,8 @@ h6 {
 
 .image {
     width: 100%;
-    aspect-ratio: 16 / 9;
-    object-fit: cover;
+    height: auto;
+    object-fit: contain;
     border: none;
     margin: 1em 0;
 }
