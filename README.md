@@ -1,8 +1,8 @@
-# DYSNM — Do You Still Need Mocap?
+# ViMoS — Do You Still Need Mocap?
 
-**[[Project Website]](https://akcit-rl.github.io/DYSNM/)** | **[[Paper]](https://arxiv.org/abs/)** <!-- TODO: update arXiv link -->
+**[[Project Website]](https://akcit-rl.github.io/ViMoS/)** | **[[Paper]](https://arxiv.org/abs/)** <!-- TODO: update arXiv link -->
 
-**DYSNM** is an end-to-end pipeline for humanoid robot motion imitation — from raw video to deployed policy on a real robot. It chains four stages: **video → SMPL pose (GENMO) → robot motion (GMR) → policy training (BeyondMimic) → deploy**.
+**ViMoS** is an end-to-end pipeline for humanoid robot motion imitation — from raw video to deployed policy on a real robot. It chains four stages: **video → SMPL pose (GENMO) → robot motion (GMR) → policy training (BeyondMimic) → deploy**.
 
 Supports **Booster T1** and **Unitree G1** (and 15+ other humanoids via GMR).
 
@@ -37,7 +37,7 @@ Video (.mp4)
 ## Repository Structure
 
 ```
-DYSNM/
+ViMoS/
 ├── scripts/
 │   ├── video_to_robot.py   ← main pipeline (venv)
 │   └── video_to_robot_docker.py   ← pipeline via Docker
@@ -59,8 +59,8 @@ DYSNM/
 ### Clone with submodules
 
 ```bash
-git clone --recurse-submodules https://github.com/AKCIT-RL/DYSNM.git
-cd DYSNM
+git clone --recurse-submodules https://github.com/AKCIT-RL/ViMoS.git
+cd ViMoS
 ```
 
 Or after cloning:
@@ -346,7 +346,7 @@ docker compose --profile mtc run --rm motion-tracking-controller \
 
 ## Acknowledgements
 
-DYSNM integrates:
+ViMoS integrates:
 - **[GENMO](retarget/GENMO/)** — Human motion generation from video
 - **[GMR](retarget/GMR/)** — General Motion Retargeting (Yanjie Ze et al.)
 - **[BeyondMimic / whole_body_tracking](train/whole_body_tracking/)** — Motion tracking policy training (HybridRobotics)
