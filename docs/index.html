@@ -132,16 +132,42 @@
             <div class="content">
                 <h5>Experiments</h5>
                 <p>
-                    To demonstrate that ViMoS generalizes across qualitatively different motion types, we trained and evaluated four distinct skills:
-                    <!-- TODO: list the four skills here when available -->
-                    [TODO — list the four validated skills].
+                    To demonstrate that ViMoS generalizes across qualitatively different motion types, we trained and evaluated three distinct skills on the Booster T1 platform: <em>Aceno</em> (wave), <em>Boxe</em> (boxing), and <em>Macarena</em> (dance). Each row below shows the full pipeline from raw video to physical deployment.
                 </p>
                 <p>
-                    <!-- TODO: add training reward plots (Booster T1 and Unitree G1) when available -->
-                    <!-- <img class="image" src="images/rewards_t1.png" alt="Training rewards — Booster T1"> -->
-                    <!-- <img class="image" src="images/rewards_g1.png" alt="Training rewards — Unitree G1"> -->
-                    All tasks achieve comparable reward curves; differences reflect motion duration rather than task difficulty. Peak GPU memory consumption during training did not exceed 12 GB, confirming that the pipeline is viable on a single high-end consumer GPU. Deployment videos for all four skills are available on the project website.
+                    All tasks achieve comparable reward curves; differences reflect motion duration rather than task difficulty. Peak GPU memory consumption during training did not exceed 12 GB, confirming that the pipeline is viable on a single high-end consumer GPU.
                 </p>
+            </div>
+        </div>
+
+        <!-- ===== RESULTS ===== -->
+        <div class="section">
+            <div class="content">
+                <h5>Results — Booster T1</h5>
+
+                <p class="motion-label">Aceno (Wave)</p>
+                <div class="video-grid">
+                    <div class="video-cell"><span>Source Video</span><video src="videos/aceno_source.mp4" autoplay loop muted playsinline></video></div>
+                    <div class="video-cell"><span>Motion Extraction</span><video src="videos/aceno_extraction.mp4" autoplay loop muted playsinline></video></div>
+                    <div class="video-cell"><span>Kinematic Retarget</span><video src="videos/aceno_retarget.mp4" autoplay loop muted playsinline></video></div>
+                    <div class="video-cell"><span>Deployment</span><video src="videos/aceno_deploy.mp4" autoplay loop muted playsinline></video></div>
+                </div>
+
+                <p class="motion-label">Boxe (Boxing)</p>
+                <div class="video-grid">
+                    <div class="video-cell"><span>Source Video</span><video src="videos/boxe_source.mp4" autoplay loop muted playsinline></video></div>
+                    <div class="video-cell"><span>Motion Extraction</span><video src="videos/boxe_extraction.mp4" autoplay loop muted playsinline></video></div>
+                    <div class="video-cell"><span>Kinematic Retarget</span><video src="videos/boxe_retarget.mp4" autoplay loop muted playsinline></video></div>
+                    <div class="video-cell"><span>Deployment</span><video src="videos/boxe_deploy.mp4" autoplay loop muted playsinline></video></div>
+                </div>
+
+                <p class="motion-label">Macarena</p>
+                <div class="video-grid">
+                    <div class="video-cell"><span>Source Video</span><video src="videos/macarena_source.mp4" autoplay loop muted playsinline></video></div>
+                    <div class="video-cell"><span>Motion Extraction</span><video src="videos/macarena_extraction.mp4" autoplay loop muted playsinline></video></div>
+                    <div class="video-cell"><span>Kinematic Retarget</span><video src="videos/macarena_retarget.mp4" autoplay loop muted playsinline></video></div>
+                    <div class="video-cell"><span>Deployment</span><video src="videos/macarena_deploy.mp4" autoplay loop muted playsinline></video></div>
+                </div>
             </div>
         </div>
 
@@ -196,7 +222,7 @@
             <div class="footer-content">
                 <p>© 2026 ViMoS: Democratizing Humanoid Motion Imitation without MoCap. All rights reserved.</p>
                 <p>Website template by <a href="https://github.com/lavinia-rl" target="_blank" class="no-underline-ft">Lavínia R. Lima</a> from <a href="https://github.com/AKCIT-RL" target="_blank" class="no-underline-ft">AKCIT</a>.</p>
-                <p>Free to use with mandatory attribution: please <a href="https://akcit-rl.github.io/DYSNM/" class="no-underline-ft" target="_blank">link</a> back to this page.</p>
+                <p>Free to use with mandatory attribution: please <a href="https://lavinia-rl.github.io/GINGA/" class="no-underline-ft" target="_blank">link</a> back to this page.</p>
             </div>
         </footer>
         <!-- Footer end -->
