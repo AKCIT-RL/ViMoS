@@ -230,6 +230,10 @@ h6 {
     margin-bottom: 2em;
 }
 
+.video-grid-4col {
+    grid-template-columns: repeat(4, 1fr);
+}
+
 .video-cell {
     display: flex;
     flex-direction: column;
@@ -258,8 +262,20 @@ h6 {
     margin: 1em 0 0.4em 0;
 }
 
+@media (max-width: 900px) {
+    .video-grid-4col {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .video-cell-empty {
+        display: none;
+    }
+}
+
 @media (max-width: 600px) {
     .video-grid {
+        grid-template-columns: 1fr;
+    }
+    .video-grid-4col {
         grid-template-columns: 1fr;
     }
 }

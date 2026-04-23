@@ -15,18 +15,19 @@
             <div class="content">
                 <h1>ViMoS: Democratizing Humanoid Motion Imitation without MoCap</h1>
                 <h3>
-                    Gabriel P. O. Ruotolo<sup>1*</sup>,
-                    Marcos P. C. M. Queiroz<sup>2*</sup>,
-                    José G. R. Teles<sup>3</sup>,
-                    Lavínia R. Lima<sup>1</sup>,
-                    Lucas Ólives<sup>1</sup>,
-                    Juan R. B. de F. Silva<sup>4</sup>,
-                    Telma W. de L. Soares<sup>2</sup>
+                    <a href="https://github.com/gpettro" target="_blank" class="no-underline">Gabriel P. O. Ruotolo</a><sup>1,2*</sup>,
+                    <a href="https://github.com/marcospaulo429" target="_blank" class="no-underline">Marcos P. C. M. Queiroz</a><sup>1,3*</sup>,
+                    <a href="https://github.com/GabrielJJ" target="_blank" class="no-underline">José G. R. Teles</a><sup>1,4</sup>,
+                    <a href="https://github.com/lavinia-rl" target="_blank" class="no-underline">Lavínia R. Lima</a><sup>1,2</sup>,
+                    <a href="https://github.com/lucasolives" target="_blank" class="no-underline">Lucas Ólives</a><sup>1,2</sup>,
+                    <a href="https://github.com/juanrbfs" target="_blank" class="no-underline">Juan R. B. de F. Silva</a><sup>1,5</sup>,
+                    <a href="https://br.linkedin.com/in/telma-soares" target="_blank" class="no-underline">Telma W. de L. Soares</a><sup>1,3</sup>
                 </h3>
-                <h4><sup>1</sup>School of Electrical, Mechanical and Computer Engineering, Federal University of Goiás, Goiânia, Brazil</h4>
-                <h4><sup>2</sup>Institute of Informatics, Federal University of Goiás, Goiânia, Brazil</h4>
-                <h4><sup>3</sup>Institute of Physics, Federal University of Goiás, Goiânia, Brazil</h4>
-                <h4><sup>4</sup>Division of Electrical and Computer Engineering, Technological Institute of Aeronautics, São José dos Campos, Brazil</h4>
+                <h4><sup>1</sup><a href="https://akcit.ufg.br/" target="_blank" class="no-underline">AKCIT</a> — Advanced Knowledge Center for Immersive Technologies, Federal University of Goiás, Goiânia, Brazil</h4>
+                <h4><sup>2</sup>School of Electrical, Mechanical and Computer Engineering, Federal University of Goiás, Goiânia, Brazil</h4>
+                <h4><sup>3</sup>Institute of Informatics, Federal University of Goiás, Goiânia, Brazil</h4>
+                <h4><sup>4</sup>Institute of Physics, Federal University of Goiás, Goiânia, Brazil</h4>
+                <h4><sup>5</sup>Division of Electrical and Computer Engineering, Technological Institute of Aeronautics, São José dos Campos, Brazil</h4>
                 <h4><sup>*</sup>Alphabetical order, equal contribution</h4>
                 <div class="links">
                     <!-- TODO: replace href with real PDF path when available -->
@@ -126,7 +127,7 @@
             <div class="content">
                 <h5>Experiments</h5>
                 <p>
-                    To demonstrate that ViMoS generalizes across qualitatively different motion types, we trained and evaluated three distinct skills on the Booster T1 platform: <em>Aceno</em> (wave), <em>Boxe</em> (boxing), and <em>Macarena</em> (dance). Each row below shows the full pipeline from raw video to physical deployment.
+                    To demonstrate that ViMoS generalizes across qualitatively different motion types and robot platforms, we trained and evaluated three distinct skills on both the Booster T1 and Unitree G1: <em>Aceno</em> (wave), <em>Boxe</em> (boxing), and <em>Macarena</em> (dance). Each row below shows the full pipeline from raw video to physical deployment.
                 </p>
                 <p>
                     All tasks achieve comparable reward curves; differences reflect motion duration rather than task difficulty. Peak GPU memory consumption during training did not exceed 12 GB, confirming that the pipeline is viable on a single high-end consumer GPU. Full training logs are available on
@@ -142,30 +143,36 @@
         <!-- ===== RESULTS ===== -->
         <div class="section">
             <div class="content">
-                <h5>Results — Booster T1</h5>
+                <h5>Results</h5>
 
                 <p class="motion-label">Aceno (Wave)</p>
                 <div class="video-grid">
-                    <div class="video-cell"><span>Source Video</span><video src="videos/aceno_source.mp4" autoplay loop muted playsinline></video></div>
-                    <div class="video-cell"><span>Motion Extraction</span><video src="videos/aceno_extraction.mp4" autoplay loop muted playsinline></video></div>
-                    <div class="video-cell"><span>Kinematic Retarget</span><video src="videos/aceno_retarget.mp4" autoplay loop muted playsinline></video></div>
-                    <div class="video-cell"><span>Deployment</span><video src="videos/aceno_deploy.mp4" autoplay loop muted playsinline></video></div>
+                    <div class="video-cell"><span>Source Video</span><video src="videos/aceno_source.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Motion Extraction</span><video src="videos/aceno_extraction.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Retarget T1</span><video src="videos/booster_t1_aceno.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Deploy T1 (MuJoCo)</span><video src="videos/aceno_deploy.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Retarget G1</span><video src="videos/unitree_g1_aceno.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Deploy G1 (MuJoCo)</span><video src="videos/g1_aceno_deploy.mp4" autoplay loop muted playsinline controls></video></div>
                 </div>
 
                 <p class="motion-label">Boxe (Boxing)</p>
                 <div class="video-grid">
-                    <div class="video-cell"><span>Source Video</span><video src="videos/boxe_source.mp4" autoplay loop muted playsinline></video></div>
-                    <div class="video-cell"><span>Motion Extraction</span><video src="videos/boxe_extraction.mp4" autoplay loop muted playsinline></video></div>
-                    <div class="video-cell"><span>Kinematic Retarget</span><video src="videos/boxe_retarget.mp4" autoplay loop muted playsinline></video></div>
-                    <div class="video-cell"><span>Deployment</span><video src="videos/boxe_deploy.mp4" autoplay loop muted playsinline></video></div>
+                    <div class="video-cell"><span>Source Video</span><video src="videos/boxe_source.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Motion Extraction</span><video src="videos/boxe_extraction.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Retarget T1</span><video src="videos/booster_t1_boxe.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Deploy T1 (MuJoCo)</span><video src="videos/boxe_deploy.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Retarget G1</span><video src="videos/unitree_g1_boxe.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Deploy G1 (MuJoCo)</span><video src="videos/g1_boxe_deploy.mp4" autoplay loop muted playsinline controls></video></div>
                 </div>
 
                 <p class="motion-label">Macarena</p>
                 <div class="video-grid">
-                    <div class="video-cell"><span>Source Video</span><video src="videos/macarena_source.mp4" autoplay loop muted playsinline></video></div>
-                    <div class="video-cell"><span>Motion Extraction</span><video src="videos/macarena_extraction.mp4" autoplay loop muted playsinline></video></div>
-                    <div class="video-cell"><span>Kinematic Retarget</span><video src="videos/macarena_retarget.mp4" autoplay loop muted playsinline></video></div>
-                    <div class="video-cell"><span>Deployment</span><video src="videos/macarena_deploy.mp4" autoplay loop muted playsinline></video></div>
+                    <div class="video-cell"><span>Source Video</span><video src="videos/macarena_source.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Motion Extraction</span><video src="videos/macarena_extraction.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Retarget T1</span><video src="videos/booster_t1_macarena.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Deploy T1 (MuJoCo)</span><video src="videos/macarena_deploy.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Retarget G1</span><video src="videos/unitree_g1_macarena.mp4" autoplay loop muted playsinline controls></video></div>
+                    <div class="video-cell"><span>Deploy G1 (MuJoCo)</span><video src="videos/g1_macarena_deploy.mp4" autoplay loop muted playsinline controls></video></div>
                 </div>
             </div>
         </div>
@@ -212,6 +219,16 @@
                         <p>Mittal et al. (2025)</p>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- ===== ACKNOWLEDGMENTS ===== -->
+        <div class="section">
+            <div class="content">
+                <h5>Acknowledgments</h5>
+                <p>
+                    This work has been [partially/fully] funded by the project <em>AKCIT-Robotics: Immersive Environments Accelerating Robot Learning</em>, supported by the Advanced Knowledge Center in Immersive Technologies (AKCIT), with financial resources from the PPI IoT of the MCTI grant number 057/2023, signed with EMBRAPII. The authors are also grateful to the Fundação de Amparo à Pesquisa do Estado de Goiás (FAPEG) for the financial support provided for this research (Grant 64448878/2024). We thank the authors of GMR, GENMO, and BeyondMimic for their open-source contributions.
+                </p>
             </div>
         </div>
 
