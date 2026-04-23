@@ -6,7 +6,7 @@
         <meta name="keywords" content="Humanoid Robotics, Motion Imitation, Reinforcement Learning, Isaac Lab, BeyondMimic, GENMO, GMR, RoboCup">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>ViMoS — Democratizing Humanoid Motion Imitation without MoCap</title>
-        <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css">
         <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
     </head>
     <body>
@@ -57,8 +57,7 @@
                     Teaching humanoid robots expressive, athletic behaviors has historically required expensive Motion Capture (MoCap) infrastructure — placing this capability out of reach for most academic and competition teams. This paper presents <strong>ViMoS</strong>, an open-source, end-to-end pipeline that transforms a single monocular video into a deployable robot control policy using only a consumer-grade GPU (tested on an NVIDIA RTX 4090).
                 </p>
                 <p>
-                    By integrating GENMO for generative motion estimation, GMR for kinematic retargeting, and BeyondMimic for reinforcement learning inside NVIDIA Isaac Lab, ViMoS enables teams to deploy whole-body behaviors onto physical humanoids such as the Unitree G1 and Booster T1. We validate the pipeline by successfully training and transferring four qualitatively distinct motion skills. A fully containerized Docker workflow minimizes setup friction to under 30 minutes, making expressive humanoid motion accessible to the broader RoboCup community.
-                </p>
+                    By integrating GENMO for generative motion estimation, GMR for kinematic retargeting, and BeyondMimic for reinforcement learning inside NVIDIA Isaac Lab, ViMoS enables teams to deploy whole-body behaviors onto physical humanoids such as the Unitree G1 and Booster T1. We validate the pipeline by successfully training and transferring four qualitatively distinct motion skills. A fully containerized Docker workflow minimizes setup friction to under 30 minutes, making expressive humanoid motion accessible to the broader RoboCup community.                </p>
             </div>
         </div>
 
@@ -119,6 +118,41 @@
                     For the <strong>Booster T1</strong>, the framework uses <strong>TorchScript JIT</strong> for high-frequency low-level control at up to 200 Hz.
                     This dual-export capability ensures ViMoS is a generalist tool, capable of powering various humanoid platforms through a unified software interface.
                 </p>
+            </div>
+        </div>
+
+        <!-- ===== TUTORIAL ===== -->
+        <div class="section" id="tutorial">
+            <div class="content">
+                <h5>Getting Started</h5>
+                <p>
+                    ViMoS is fully containerized with Docker, so the only requirements are a Linux machine with an NVIDIA GPU (RTX 3090+), Docker with <a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html" target="_blank" class="no-underline">nvidia-container-toolkit</a>, and a free <a href="https://wandb.ai/" target="_blank" class="no-underline">Weights &amp; Biases</a> account for the artifact registry. You will also need the GENMO checkpoint (<span class="inline-code">s050000.ckpt</span>) placed at <span class="inline-code">retarget/GENMO/inputs/checkpoints/</span>.
+                </p>
+
+                <h6>1. Clone and install</h6>
+<pre><code>git clone --recurse-submodules https://github.com/AKCIT-RL/ViMoS.git
+cd ViMoS
+docker compose build                      # Stages 1–2 (GENMO + GMR)
+docker compose --profile wbt build        # Stage 3 (Isaac Lab training)</code></pre>
+
+                <h6>2. Video → Robot Motion (Stages 1 &amp; 2)</h6>
+                <p>A single script runs GENMO and GMR end-to-end and outputs the retargeted motion as a CSV ready for training:</p>
+<pre><code>python scripts/video_to_robot_docker.py --video my_video.mp4 --robot booster_t1
+# or: --robot unitree_g1  |  add --headless for SSH  |  add --record_video to save visualization</code></pre>
+
+                <h6>3. Policy Training (Stage 3)</h6>
+                <p>Convert the CSV to NPZ, upload to W&amp;B, then launch PPO training in Isaac Lab:</p>
+<pre><code>cd train/whole_body_tracking
+python scripts/csv_to_npz.py --input_file motion.csv --output_name my_motion --robot booster_t1 --headless
+python scripts/rsl_rl/train.py --task=Tracking-Flat-T1-Wo-State-Estimation-v0 --num_envs 4096 --headless</code></pre>
+                <p>For Unitree G1 use <span class="inline-code">--task=Tracking-Flat-G1-v0</span>. After training, export with <span class="inline-code">play.py</span> to get a <span class="inline-code">.pt</span> (T1) or <span class="inline-code">.onnx</span> (G1) policy file.</p>
+
+                <h6>4. Deploy in MuJoCo (Stage 4)</h6>
+<pre><code># Unitree G1 via ROS 2
+ros2 launch motion_tracking_controller mujoco.launch.py policy_path:=/path/to/policy.onnx</code></pre>
+                <p>For Booster T1, see <a href="https://github.com/AKCIT-RL/ViMoS/blob/main/deploy/booster_deploy/README.md" target="_blank" class="no-underline">deploy/booster_deploy/README.md</a>.</p>
+
+                <p>For detailed instructions, troubleshooting, and advanced options, visit the <a href="https://github.com/AKCIT-RL/ViMoS" target="_blank" class="no-underline">GitHub repository</a>.</p>
             </div>
         </div>
 
