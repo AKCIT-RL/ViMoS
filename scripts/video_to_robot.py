@@ -361,19 +361,28 @@ def process_video_sandwich(video_path: Path, video_name: str, output_dir: Path, 
     return combined_pt
 
 
-def run_gmr(hmr4d_results: Path, video_name: str, args):
+def run_gmr(hmr4d_results: Path, video_name: str, args, subfolder: str = None):
     """
     Runs GMR (gvhmr_to_robot.py) from hmr4d_results.pt.
-    PKL is saved to GMR/output/pkl/<robot>_<video_name>.pkl.
+    PKL is saved to GMR/output/pkl/[subfolder/]<robot>_<video_name>.pkl.
     """
     if args.save_path:
         save_path = Path(args.save_path)
     else:
-        GMR_OUTPUT_PKL.mkdir(parents=True, exist_ok=True)
-        save_path = GMR_OUTPUT_PKL / f"{args.robot}_{video_name}.pkl"
+        pkl_dir = GMR_OUTPUT_PKL / subfolder if subfolder else GMR_OUTPUT_PKL
+        pkl_dir.mkdir(parents=True, exist_ok=True)
+        save_path = pkl_dir / f"{args.robot}_{video_name}.pkl"
 
-    GMR_VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
-    video_save_path = GMR_VIDEOS_DIR / f"{args.robot}_{video_name}.mp4"
+    if args.video_save_path:
+        video_save_path = Path(args.video_save_path)
+        # If a directory is given, append the filename
+        if video_save_path.is_dir() or not video_save_path.suffix:
+            video_save_path.mkdir(parents=True, exist_ok=True)
+            video_save_path = video_save_path / f"{args.robot}_{video_name}.mp4"
+    else:
+        videos_dir = GMR_VIDEOS_DIR / subfolder if subfolder else GMR_VIDEOS_DIR
+        videos_dir.mkdir(parents=True, exist_ok=True)
+        video_save_path = videos_dir / f"{args.robot}_{video_name}.mp4"
 
     cmd = [
         GMR_PYTHON,
@@ -390,6 +399,8 @@ def run_gmr(hmr4d_results: Path, video_name: str, args):
         cmd.append("--rate_limit")
     if args.loop:
         cmd.append("--loop")
+    if args.flip_facing:
+        cmd.append("--flip_facing")
 
     env = os.environ.copy()
     if args.headless:
@@ -417,12 +428,13 @@ def run_gmr(hmr4d_results: Path, video_name: str, args):
     return save_path
 
 
-def run_pkl_to_csv(pkl_path: Path, video_name: str, robot: str):
+def run_pkl_to_csv(pkl_path: Path, video_name: str, robot: str, subfolder: str = None):
     """
-    Converts a single GMR .pkl file to CSV and saves it to GMR/output/csv/.
+    Converts a single GMR .pkl file to CSV and saves it to GMR/output/csv/[subfolder/].
     """
-    GMR_OUTPUT_CSV.mkdir(parents=True, exist_ok=True)
-    csv_path = GMR_OUTPUT_CSV / f"{robot}_{video_name}.csv"
+    csv_dir = GMR_OUTPUT_CSV / subfolder if subfolder else GMR_OUTPUT_CSV
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = csv_dir / f"{robot}_{video_name}.csv"
 
     print("\n" + "=" * 60)
     print(f"[CSV] Converting PKL → CSV: {pkl_path.name}")
@@ -455,12 +467,14 @@ def run_pkl_to_csv(pkl_path: Path, video_name: str, robot: str):
     return csv_path
 
 
-def process_video(video_path: Path, args, video_name: str = None):
+def process_video(video_path: Path, args, video_name: str = None, subfolder: str = None):
     """Runs the full pipeline (GENMO + GMR) for a single video."""
     video_name = video_name or video_path.stem
 
     if args.output_dir:
         output_dir = Path(args.output_dir)
+    elif subfolder:
+        output_dir = GENMO_DIR / "outputs" / subfolder / video_name
     else:
         output_dir = GENMO_DIR / "outputs" / "demo" / video_name
 
@@ -480,10 +494,10 @@ def process_video(video_path: Path, args, video_name: str = None):
         hmr4d_results = run_genmo(video_path, video_name, output_dir, args)
 
     # Stage 2 — GMR: SMPL → robot motion PKL
-    save_path = run_gmr(hmr4d_results, video_name, args)
+    save_path = run_gmr(hmr4d_results, video_name, args, subfolder=subfolder)
 
     # Stage 3 — Convert PKL → CSV
-    run_pkl_to_csv(save_path, video_name, args.robot)
+    run_pkl_to_csv(save_path, video_name, args.robot, subfolder=subfolder)
 
     return hmr4d_results, save_path
 
@@ -614,6 +628,12 @@ def main():
         help="Record a video of the GMR visualization.",
     )
     parser.add_argument(
+        "--video_save_path",
+        default=None,
+        help="Path to save the GMR visualization video (.mp4). "
+             "Default: GMR/videos/<robot>_<video_name>.mp4",
+    )
+    parser.add_argument(
         "--rate_limit",
         action="store_true",
         default=False,
@@ -631,6 +651,14 @@ def main():
         default=False,
         help="Run GMR/MuJoCo in headless mode (no window). "
              "Sets MUJOCO_GL=egl. Useful for SSH or display-less servers.",
+    )
+
+    parser.add_argument(
+        "--flip_facing",
+        action="store_true",
+        default=False,
+        help="Flip the character 180° around the vertical axis. "
+             "Use when the video was recorded facing the camera.",
     )
 
     args = parser.parse_args()
@@ -664,8 +692,16 @@ def main():
         results = []
         for i, vp in enumerate(videos, 1):
             print(f"\n[{i}/{len(videos)}] {vp.name}")
+            video_name = vp.stem
+            pkl_dir = GMR_OUTPUT_PKL / folder.name if not args.save_path else None
+            expected_pkl = (Path(args.save_path) if args.save_path
+                            else pkl_dir / f"{args.robot}_{video_name}.pkl")
+            if not args.force and expected_pkl.exists():
+                print(f"[SKIP] Already processed: {expected_pkl.name}")
+                results.append((vp, expected_pkl, None))
+                continue
             try:
-                _, save = process_video(vp, args)
+                _, save = process_video(vp, args, subfolder=folder.name)
                 results.append((vp, save, None))
             except SystemExit as e:
                 print(f"[WARN] Skipping {vp.name} (error {e.code})")
