@@ -342,6 +342,25 @@ docker compose --profile mtc run --rm motion-tracking-controller \
 - **GMR no display (SSH):** use `--headless` or Docker (MUJOCO_GL=egl set automatically)
 - **W&B artifact not found:** verify `WANDB_ENTITY` and the exact artifact name with `wandb artifact ls <entity>/<project>`
 
+### Vertical / phone-recorded videos
+
+If your input videos were recorded vertically on a phone, they likely carry a `rotate=90` (or 180/270) metadata tag while the actual pixels are stored in landscape orientation. The video reader used by GENMO/GVHMR (`imageio` + `pyav`) does **not** honor this rotation metadata, so the estimated human mesh will appear lying on the ground.
+
+Re-encode such videos to bake the rotation into the pixels before running the pipeline:
+
+```bash
+mkdir -p videos_fixed
+for f in videos/*.mp4; do
+  ffmpeg -y -i "$f" \
+    -c:v libx264 -crf 17 -preset fast \
+    -c:a copy \
+    -map_metadata 0 -metadata:s:v:0 rotate=0 \
+    "videos_fixed/$(basename "$f")"
+done
+```
+
+Then pass `videos_fixed/` as input instead of the original folder.
+
 ---
 
 ## Acknowledgements
