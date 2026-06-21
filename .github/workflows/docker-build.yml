@@ -1,0 +1,75 @@
+name: Build & publish Docker images
+
+# Builds the GENMO, GMR and motion-tracking-controller images and pushes them to
+# the GitHub Container Registry (GHCR) so users can `docker compose pull` instead
+# of building locally. The whole-body-tracking (Isaac Lab) image is intentionally
+# excluded: it builds on the NGC Isaac Sim base, which requires an authenticated
+# NGC login and an accepted EULA, so it must be built locally.
+
+on:
+  push:
+    tags:
+      - "v*"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: genmo
+            context: retarget/GENMO
+            image: ghcr.io/${{ github.repository_owner }}/vimos-genmo
+          - name: gmr
+            context: retarget/GMR
+            image: ghcr.io/${{ github.repository_owner }}/vimos-gmr
+          - name: motion-tracking-controller
+            context: deploy/motion_tracking_controller
+            image: ghcr.io/${{ github.repository_owner }}/vimos-motion-tracking-controller
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android "$AGENT_TOOLSDIRECTORY" || true
+          df -h
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ matrix.image }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}

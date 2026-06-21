@@ -116,13 +116,14 @@
             <div class="content">
                 <h5>Getting Started</h5>
                 <p>
-                    ViMoS is fully containerized with Docker, so the only requirements are a Linux machine with an NVIDIA GPU (RTX 3090+), Docker with <a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html" target="_blank" class="no-underline">nvidia-container-toolkit</a>, and a free <a href="https://wandb.ai/" target="_blank" class="no-underline">Weights &amp; Biases</a> account for the artifact registry. You will also need the GENMO checkpoint (<span class="inline-code">s050000.ckpt</span>) placed at <span class="inline-code">retarget/GENMO/inputs/checkpoints/</span>.
+                    ViMoS is fully containerized with Docker, so the only requirements are a Linux machine with an NVIDIA GPU (RTX 3090+), Docker with <a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html" target="_blank" class="no-underline">nvidia-container-toolkit</a>, and a free <a href="https://wandb.ai/" target="_blank" class="no-underline">Weights &amp; Biases</a> account for the artifact registry. You will also need a few model files (the GENMO <span class="inline-code">s050000.ckpt</span> and the SMPL / SMPL-X body models); drop the downloaded archives in the repo root and run <span class="inline-code">python scripts/download_assets.py</span> to install them automatically.
                 </p>
 
                 <h6>1. Clone and install</h6>
 <pre><code>git clone --recurse-submodules https://github.com/AKCIT-RL/ViMoS.git
 cd ViMoS
-docker compose build                      # Stages 1–2 (GENMO + GMR)
+python scripts/download_assets.py         # install checkpoints &amp; body models
+docker compose pull genmo gmr             # or: docker compose build (Stages 1–2)
 docker compose --profile wbt build        # Stage 3 (Isaac Lab training)</code></pre>
 
                 <h6>2. Video → Robot Motion (Stages 1 &amp; 2)</h6>

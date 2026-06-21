@@ -2,3 +2,8 @@
 !docs/videos/*.mp4
 __pycache__/
 fut_do_t1/
+
+# License-gated model archives / checkpoints — download manually (see README)
+s050000*.ckpt
+models_smplx_v1_1.zip
+SMPL_python_v.1.1.0.zip

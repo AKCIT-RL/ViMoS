@@ -68,6 +68,61 @@ Or after cloning:
 git submodule update --init --recursive
 ```
 
+### Download checkpoints & body models
+
+The pipeline needs several model files. Some are downloaded automatically; a few
+are license-gated and must be downloaded once by hand (free registration).
+
+**Step 1 — download the license-gated files and drop them in the repo root:**
+
+| File | Source (register + accept license) |
+|---|---|
+| `s050000.ckpt` | GENMO motion model — [Google Drive](https://drive.google.com/file/d/1b1E84G7S0h2n5o0RmrcmKOhRKukOjgsJ/view) |
+| `models_smplx_v1_1.zip` | SMPL-X body models — [smpl-x.is.tue.mpg.de](https://smpl-x.is.tue.mpg.de/) |
+| `SMPL_python_v.1.1.0.zip` | SMPL body model — [smpl.is.tue.mpg.de](https://smpl.is.tue.mpg.de/) |
+
+Just leave the three files in the repository root (`ViMoS/`) — no need to rename
+or unzip them.
+
+**Step 2 — run the installer:**
+
+```bash
+python scripts/download_assets.py
+```
+
+This extracts and places every file in the exact location each stage expects,
+and automatically downloads the freely-redistributable GENMO video backbone
+checkpoints (GVHMR, ViTPose, HMR2) from a public mirror. It is idempotent —
+re-running it only fetches what is missing. If your archives are elsewhere, use
+`--genmo-ckpt`, `--smplx-zip`, and `--smpl-zip`; use `--skip-download` to avoid
+network access.
+
+After it finishes, the resulting layout is:
+
+```
+retarget/GENMO/inputs/checkpoints/
+├── s050000.ckpt                         # GENMO motion model
+├── vitpose/vitpose-h-multi-coco.pth     # auto-downloaded
+├── gvhmr/gvhmr_siga24_release.ckpt      # auto-downloaded
+├── hmr2/epoch=10-step=25000.ckpt        # auto-downloaded
+├── yolo/yolov8x.pt                      # auto-downloaded (person detector)
+└── body_models/
+    ├── smplx/SMPLX_NEUTRAL.npz          # (+ MALE/FEMALE)
+    ├── smpl/SMPL_NEUTRAL.pkl
+    ├── smplx2smpl_sparse.pt             # copied from the GVHMR submodule
+    └── smpl_neutral_J_regressor.pt      # copied from the GVHMR submodule
+
+retarget/GMR/assets/body_models/
+└── smplx/SMPLX_NEUTRAL.npz              # (+ MALE/FEMALE)
+```
+
+> The robot assets (URDF/meshes for every supported humanoid) ship inside the
+> GMR submodule under `retarget/GMR/assets/<robot>/` — no extra download needed.
+
+> On its first run, GENMO downloads the `t5-3b` text encoder (~11 GB) into
+> `retarget/GENMO/hf_cache/` (mounted as a volume). The download happens once and
+> is reused on subsequent runs — make sure you have the free disk space.
+
 ### Environment setup
 
 Each stage has its own environment. You have two options:
@@ -84,13 +139,23 @@ Each stage has its own environment. You have two options:
 
 **Option B — Docker (recommended for Stages 1–3):**
 
+Prebuilt images are published to GitHub Container Registry — pull them instead of
+building locally:
+
+```bash
+docker compose pull genmo gmr     # fetch prebuilt GENMO + GMR images
+```
+
+Or build from source:
+
 ```bash
 docker compose build              # GENMO + GMR
 docker compose --profile wbt build   # + whole_body_tracking (Isaac Lab)
 docker compose --profile mtc build  # + motion_tracking_controller (ROS 2)
 ```
 
-> Requires Docker Engine 20.10+, [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html), and `GENMO/inputs/checkpoints/s050000.ckpt`.
+> Requires Docker Engine 20.10+ and [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html). Run `python scripts/download_assets.py` first so the checkpoints are in place (see [Download checkpoints & body models](#download-checkpoints--body-models)).
+> The `wbt` image builds on Isaac Sim and requires `docker login nvcr.io` (free NGC account) before its first build.
 
 ---
 
@@ -338,7 +403,7 @@ docker compose --profile mtc run --rm motion-tracking-controller \
 - **Empty submodules after clone:** `git submodule update --init --recursive`
 - **Update submodules:** `git submodule update --remote --checkout`
 - **Errors in each stage:** check the corresponding submodule README
-- **GENMO can't find checkpoint:** place it at `retarget/GENMO/inputs/checkpoints/s050000.ckpt`
+- **GENMO can't find a checkpoint:** run `python scripts/download_assets.py` to (re)install every model file; see [Download checkpoints & body models](#download-checkpoints--body-models) for the expected layout.
 - **GMR no display (SSH):** use `--headless` or Docker (MUJOCO_GL=egl set automatically)
 - **W&B artifact not found:** verify `WANDB_ENTITY` and the exact artifact name with `wandb artifact ls <entity>/<project>`
 
