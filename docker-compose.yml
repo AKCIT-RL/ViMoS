@@ -1,8 +1,8 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# DYSNM — Docker Compose (single file at repo root)
+# ViMoS — Docker Compose (single file at repo root)
 #
 # GENMO + GMR (default): do not run `docker compose up` for the full pipeline.
-# The orchestrator scripts/run_pipeline_docker.py invokes:
+# The orchestrator scripts/video_to_robot_docker.py invokes:
 #   docker compose run --rm genmo <command>
 #   docker compose run --rm gmr   <command>
 #
