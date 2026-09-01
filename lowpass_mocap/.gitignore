@@ -1,0 +1,5 @@
+# generated outputs — reproduce with  run_all.sh  (do not commit)
+output/
+CSV_Genmo/
+__pycache__/
+_*.png
