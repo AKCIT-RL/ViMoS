@@ -1,5 +1,6 @@
 *.mp4
 !docs/videos/*.mp4
+!docs/pt/static/videos/*.mp4
 __pycache__/
 fut_do_t1/
 
